@@ -1,0 +1,6 @@
+{
+  "name": "My PA Portfolio",
+  "description": "ระบบสะสมผลงาน หลักฐาน กิจกรรม และผลลัพธ์การปฏิบัติงานเพื่อการประเมิน PA และเลื่อนเงินเดือนครู",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

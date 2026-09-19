@@ -1,11 +1,55 @@
-<div align="center">
+# คู่มือการติดตั้งและใช้งานระบบ My PA Portfolio
+ระบบสะสมผลงาน หลักฐาน กิจกรรม และผลลัพธ์การปฏิบัติงานเพื่อการประเมิน PA และเลื่อนเงินเดือนครู
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+---
 
-  <h1>Built with AI Studio</h2>
+## 1. คุณสมบัติเด่นของระบบ
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+1. **Intelligent Evidence Management**:
+   - เพิ่มผลงานง่าย ๆ ภายใน 1 นาที: เพียงกรอกชื่อกิจกรรม + คำอธิบายสั้น ๆ + ไฟล์รูป/เอกสาร
+   - **Gemini AI Classification**: วิเคราะห์หาตัวชี้วัดหลักและตัวชี้วัดรองที่สอดคล้องตามเกณฑ์ ว9/2564 พร้อมให้คะแนนความมั่นใจ
+   - **AI Writing Assistant**: ร่างข้อความประกอบการประเมิน 3 รูปแบบ (แบบสั้นสำหรับ Card, แบบรายงานราชการ และแบบเชื่อมโยงตัวชี้วัด)
+   - **AI Gap Analysis & Opportunity Finder**: ตรวจสอบตัวชี้วัดที่ยังขาด พร้อมแนะนำกิจกรรมที่ครูควรจัดทำเพิ่มเติมตามบริบทวิชาและวิทยฐานะ
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+2. **Google Workspace Direct Cloud Storage**:
+   - **Google Drive**: ทำหน้าที่เป็น File Storage หลัก จัดเก็บไฟล์เอกสาร รูปภาพ วิดีโอ และสร้างโฟลเดอร์ตามปีงบประมาณและ Evidence ID โดยอัตโนมัติ
+   - **Google Sheets**: ทำหน้าที่เป็น Database หลัก เก็บ Metadata, ตารางความสัมพันธ์ Evidence-Criteria และบันทึกประวัติ
 
-</div>
+3. **Evaluation Contexts**:
+   - รองรับ **PA ประจำปี (ว9/2564)** (1 ตุลาคม – 30 กันยายน)
+   - รองรับ **การเลื่อนเงินเดือน (ว23/2564)** ทั้งรอบที่ 1 และรอบที่ 2
+   - ระบบ **Evidence Readiness Indicator**: ไม่ใช่คะแนนประเมิน แต่เป็นมาตรวัดความพร้อมของหลักฐานเพื่อเตรียมตัวก่อนถึงวันประเมินจริง
+
+---
+
+## 2. โครงสร้าง Google Drive Folder
+
+เมื่อกดเชื่อมต่อ Google Workspace ในหน้าตั้งค่า ระบบจะสร้างโครงสร้างโฟลเดอร์ดังนี้:
+
+```text
+My_PA_Portfolio/
+└── 2570/
+    ├── 00_Profile/
+    ├── 01_PA1/
+    ├── 02_Evidence/
+    │   ├── E-2570-0001/
+    │   └── E-2570-0002/
+    ├── 03_Salary_Round_1/
+    ├── 04_Salary_Round_2/
+    ├── 05_PA_Result/
+    ├── 06_Reports/
+    └── 99_Backup/
+```
+
+---
+
+## 3. โครงสร้างตารางใน Google Sheets (MyPA_Portfolio_DB)
+
+- `SETTINGS`: ข้อมูลการตั้งค่าระบบและรอบปีงบประมาณ
+- `PROFILE`: ข้อมูลครูผู้รับการประเมิน วิทยฐานะ สังกัด และวิชาที่สอน
+- `CRITERIA`: ตารางเกณฑ์มาตรฐาน ว9/2564 (3 ด้าน 15 ตัวชี้วัด) และ ว23/2564
+- `PA_PLANS`: ข้อตกลง PA1 ภาระงานสอน และประเด็นท้าทาย
+- `EVIDENCE`: รายการผลงานหลัก (evidence_id, title, activity_type, date, process, output, outcome, quantitative, qualitative)
+- `EVIDENCE_FILES`: รายการไฟล์แนบและลิงก์ Google Drive
+- `EVIDENCE_CRITERIA_MAP`: ตารางจับคู่ความสัมพันธ์ผลงานกับตัวชี้วัด พร้อมคะแนนความมั่นใจของ AI และสถานะการยืนยันของผู้ใช้
+- `AUDIT_LOG`: ประวัติการเปลี่ยนแปลงและการยืนยันข้อมูล
