@@ -310,36 +310,32 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
     <div className="space-y-6">
       {/* Toast Notification for Profile Save */}
       {saveToast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 bg-purple-900 text-white rounded-2xl shadow-xl border border-amber-400/40 animate-fade-in">
-          <div className="w-8 h-8 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 bg-[#1d1d1f] text-white rounded-2xl shadow-2xl border border-black/10 animate-fade-in">
+          <div className="w-8 h-8 rounded-full bg-[#34c759]/20 text-[#34c759] flex items-center justify-center">
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-sm font-bold text-white">บันทึกข้อมูลส่วนตัวสำเร็จ</div>
-            <div className="text-xs text-amber-200">อัปเดตข้อมูลทะเบียนและระบบ PA เรียบร้อยแล้ว</div>
+            <div className="text-sm font-semibold text-white">บันทึกข้อมูลส่วนตัวสำเร็จ</div>
+            <div className="text-xs text-[#86868b]">อัปเดตข้อมูลทะเบียนและระบบ PA เรียบร้อยแล้ว</div>
           </div>
         </div>
       )}
 
       {/* Avatar Specific Toast Notification */}
       {avatarToast && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 bg-emerald-950 text-white rounded-2xl shadow-2xl border border-emerald-400/60 animate-fade-in">
-          <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center">
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 bg-[#1d1d1f] text-white rounded-2xl shadow-2xl border border-black/10 animate-fade-in">
+          <div className="w-8 h-8 rounded-full bg-[#34c759]/20 text-[#34c759] flex items-center justify-center">
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-sm font-bold text-white">{avatarToast}</div>
-            <div className="text-xs text-emerald-300/90">บันทึกรูปภาพและจัดเก็บลงโปรไฟล์เรียบร้อยแล้ว</div>
+            <div className="text-sm font-semibold text-white">{avatarToast}</div>
+            <div className="text-xs text-[#86868b]">บันทึกรูปภาพและจัดเก็บลงโปรไฟล์เรียบร้อยแล้ว</div>
           </div>
         </div>
       )}
 
-      {/* Top Banner & Profile Overview (White, Purple, Gold Technology Aesthetic) */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-950 via-purple-900 to-indigo-950 text-white p-6 sm:p-8 border border-purple-800/80 shadow-lg">
-        {/* Subtle Tech Glow Ornaments */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 rounded-full bg-purple-600/20 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-16 w-64 h-64 rounded-full bg-amber-500/15 blur-2xl pointer-events-none" />
-
+      {/* Top Banner & Profile Overview (Apple Clean Aesthetic) */}
+      <div className="relative overflow-hidden rounded-3xl bg-white text-[#1d1d1f] p-6 sm:p-8 border border-black/[0.06] shadow-[0_2px_16px_rgba(0,0,0,0.03)]">
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             {/* Avatar with photo and file upload */}
@@ -350,7 +346,7 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
                   setAvatarError(null);
                   setIsAvatarModalOpen(true);
                 }}
-                className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-amber-400/80 bg-purple-900/60 shadow-lg flex items-center justify-center cursor-pointer relative transition-transform hover:scale-[1.02]"
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden border border-black/[0.08] bg-[#f5f5f7] shadow-xs flex items-center justify-center cursor-pointer relative transition-transform hover:scale-[1.02]"
                 title="คลิกเพื่อเปลี่ยนหรือจัดการรูปโปรไฟล์"
               >
                 {avatarPreview ? (
@@ -361,21 +357,21 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center text-amber-300">
+                  <div className="flex flex-col items-center justify-center text-[#86868b]">
                     <User className="w-12 h-12" />
-                    <span className="text-[10px] font-bold text-purple-200 mt-1">ยังไม่มีรูป</span>
+                    <span className="text-[10px] font-medium text-[#86868b] mt-1">ยังไม่มีรูป</span>
                   </div>
                 )}
 
                 {/* Processing Overlay */}
                 {isProcessingAvatar ? (
-                  <div className="absolute inset-0 bg-purple-950/85 flex flex-col items-center justify-center text-white text-[10px] font-semibold gap-1.5 p-1 text-center">
-                    <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+                  <div className="absolute inset-0 bg-black/75 flex flex-col items-center justify-center text-white text-[10px] font-medium gap-1.5 p-1 text-center">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#0071e3]" />
                     <span>กำลังย่อขนาด...</span>
                   </div>
                 ) : (
-                  <div className="absolute inset-0 bg-purple-950/65 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[11px] font-semibold gap-1">
-                    <Camera className="w-5 h-5 text-amber-400" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[11px] font-medium gap-1">
+                    <Camera className="w-5 h-5 text-white" />
                     <span>เปลี่ยนรูป</span>
                   </div>
                 )}
@@ -389,35 +385,35 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
                   setAvatarError(null);
                   setIsAvatarModalOpen(true);
                 }}
-                className="absolute bottom-1 right-1 p-2 rounded-xl bg-amber-500 text-slate-950 hover:bg-amber-400 shadow-md cursor-pointer transition-transform group-hover:scale-110 flex items-center justify-center"
+                className="absolute bottom-1 right-1 p-2 rounded-full bg-[#1d1d1f] text-white hover:bg-[#333336] shadow-sm cursor-pointer transition-transform group-hover:scale-110 flex items-center justify-center border-2 border-white"
                 title="คลิกเพื่อจัดการรูปโปรไฟล์"
               >
-                <Camera className="w-4 h-4" />
+                <Camera className="w-3.5 h-3.5 text-white" />
               </button>
             </div>
 
             {/* Teacher Titles & Quick Identifiers */}
             <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-semibold">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/[0.04] text-[#515154] text-xs font-medium">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#0071e3]" />
                 <span>ทะเบียนข้าราชการครู • ปีงบประมาณ {fiscalYear}</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1d1d1f] flex items-center gap-2">
                 {formData.prefix}{formData.firstName} {formData.lastName}
               </h1>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-purple-200">
-                <span className="font-medium text-amber-200">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#515154]">
+                <span className="font-medium text-[#1d1d1f]">
                   ตำแหน่ง {formData.position} ({formData.currentRank})
                 </span>
-                <span>•</span>
+                <span className="text-black/20">•</span>
                 <span>เลขที่ตำแหน่ง {formData.positionNumber}</span>
-                <span>•</span>
+                <span className="text-black/20">•</span>
                 <span>{formData.academicStanding}</span>
               </div>
-              <div className="text-xs text-purple-300/90 flex flex-wrap items-center gap-2 pt-0.5">
-                <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <div className="text-xs text-[#86868b] flex flex-wrap items-center gap-2 pt-0.5">
+                <Building2 className="w-3.5 h-3.5 text-[#86868b] shrink-0" />
                 <span>{formData.school}</span>
-                <span className="text-purple-400">•</span>
+                <span className="text-black/20">•</span>
                 <span>{formData.affiliation}</span>
               </div>
             </div>
@@ -428,7 +424,7 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
             <button
               id="save-profile-btn-top"
               onClick={handleSave}
-              className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-slate-950 font-bold text-sm shadow-md hover:from-amber-300 hover:to-yellow-400 hover:shadow-amber-500/25 transition-all cursor-pointer"
+              className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#0071e3] hover:bg-[#0077ed] text-white font-medium text-xs sm:text-sm shadow-xs transition-colors cursor-pointer"
             >
               <Save className="w-4 h-4" />
               บันทึกการแก้ไขโปรไฟล์
@@ -437,77 +433,77 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
         </div>
 
         {/* Quick Highlights Strip */}
-        <div className="mt-6 pt-5 border-t border-purple-800/60 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="p-2.5 rounded-xl bg-purple-900/40 border border-purple-800/50">
-            <span className="text-purple-300 block">เลขประจำตัวประชาชน</span>
-            <span className="font-semibold text-white tracking-wide">{formData.idCard}</span>
+        <div className="mt-6 pt-5 border-t border-black/[0.06] grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div className="p-3 rounded-2xl bg-[#fbfbfd] border border-black/[0.05]">
+            <span className="text-[#86868b] block text-[11px]">เลขประจำตัวประชาชน</span>
+            <span className="font-medium text-[#1d1d1f] tracking-wide">{formData.idCard}</span>
           </div>
-          <div className="p-2.5 rounded-xl bg-purple-900/40 border border-purple-800/50">
-            <span className="text-purple-300 block">ใบอนุญาตประกอบวิชาชีพ</span>
-            <span className="font-semibold text-amber-300">B License (ใช้งานได้)</span>
+          <div className="p-3 rounded-2xl bg-[#fbfbfd] border border-black/[0.05]">
+            <span className="text-[#86868b] block text-[11px]">ใบอนุญาตประกอบวิชาชีพ</span>
+            <span className="font-medium text-[#34c759]">B License (ใช้งานได้)</span>
           </div>
-          <div className="p-2.5 rounded-xl bg-purple-900/40 border border-purple-800/50">
-            <span className="text-purple-300 block">วันบรรจุรับราชการ</span>
-            <span className="font-semibold text-white">{formData.appointmentDate}</span>
+          <div className="p-3 rounded-2xl bg-[#fbfbfd] border border-black/[0.05]">
+            <span className="text-[#86868b] block text-[11px]">วันบรรจุรับราชการ</span>
+            <span className="font-medium text-[#1d1d1f]">{formData.appointmentDate}</span>
           </div>
-          <div className="p-2.5 rounded-xl bg-purple-900/40 border border-purple-800/50">
-            <span className="text-purple-300 block">อีเมลสถานศึกษา</span>
-            <span className="font-semibold text-white truncate block">{formData.email}</span>
+          <div className="p-3 rounded-2xl bg-[#fbfbfd] border border-black/[0.05]">
+            <span className="text-[#86868b] block text-[11px]">อีเมลสถานศึกษา</span>
+            <span className="font-medium text-[#1d1d1f] truncate block">{formData.email}</span>
           </div>
         </div>
       </div>
 
-      {/* Navigation Tabs for Profile Sections */}
-      <div className="bg-white rounded-2xl p-1.5 border border-purple-100/80 shadow-xs flex flex-wrap gap-1.5">
+      {/* Navigation Tabs for Profile Sections (Apple Segmented Control) */}
+      <div className="bg-[#f0f0f2] p-1 rounded-2xl flex flex-wrap gap-1">
         <button
           id="profile-tab-general"
           onClick={() => setActiveTab('general')}
-          className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+          className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm transition-all cursor-pointer ${
             activeTab === 'general'
-              ? 'bg-purple-900 text-white shadow-xs border border-purple-800'
-              : 'text-slate-600 hover:text-purple-900 hover:bg-purple-50'
+              ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+              : 'text-[#515154] hover:text-[#1d1d1f]'
           }`}
         >
-          <User className={`w-4 h-4 ${activeTab === 'general' ? 'text-amber-400' : 'text-slate-400'}`} />
+          <User className={`w-4 h-4 ${activeTab === 'general' ? 'text-[#0071e3]' : 'text-[#86868b]'}`} />
           ข้อมูลทั่วไป &amp; การติดต่อ
         </button>
 
         <button
           id="profile-tab-education"
           onClick={() => setActiveTab('education')}
-          className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+          className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm transition-all cursor-pointer ${
             activeTab === 'education'
-              ? 'bg-purple-900 text-white shadow-xs border border-purple-800'
-              : 'text-slate-600 hover:text-purple-900 hover:bg-purple-50'
+              ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+              : 'text-[#515154] hover:text-[#1d1d1f]'
           }`}
         >
-          <GraduationCap className={`w-4 h-4 ${activeTab === 'education' ? 'text-amber-400' : 'text-slate-400'}`} />
+          <GraduationCap className={`w-4 h-4 ${activeTab === 'education' ? 'text-[#0071e3]' : 'text-[#86868b]'}`} />
           ประวัติการศึกษา ({formData.educationList?.length || 0})
         </button>
 
         <button
           id="profile-tab-career"
           onClick={() => setActiveTab('career')}
-          className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+          className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm transition-all cursor-pointer ${
             activeTab === 'career'
-              ? 'bg-purple-900 text-white shadow-xs border border-purple-800'
-              : 'text-slate-600 hover:text-purple-900 hover:bg-purple-50'
+              ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+              : 'text-[#515154] hover:text-[#1d1d1f]'
           }`}
         >
-          <Briefcase className={`w-4 h-4 ${activeTab === 'career' ? 'text-amber-400' : 'text-slate-400'}`} />
+          <Briefcase className={`w-4 h-4 ${activeTab === 'career' ? 'text-[#0071e3]' : 'text-[#86868b]'}`} />
           ประวัติการรับราชการ / ตำแหน่ง
         </button>
 
         <button
           id="profile-tab-licenses"
           onClick={() => setActiveTab('licenses')}
-          className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+          className={`flex-1 min-w-[140px] flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs sm:text-sm transition-all cursor-pointer ${
             activeTab === 'licenses'
-              ? 'bg-purple-900 text-white shadow-xs border border-purple-800'
-              : 'text-slate-600 hover:text-purple-900 hover:bg-purple-50'
+              ? 'bg-white text-[#1d1d1f] font-semibold shadow-xs'
+              : 'text-[#515154] hover:text-[#1d1d1f]'
           }`}
         >
-          <Award className={`w-4 h-4 ${activeTab === 'licenses' ? 'text-amber-400' : 'text-slate-400'}`} />
+          <Award className={`w-4 h-4 ${activeTab === 'licenses' ? 'text-[#0071e3]' : 'text-[#86868b]'}`} />
           ใบอนุญาตวิชาชีพ &amp; เครื่องราชฯ
         </button>
       </div>
@@ -1228,21 +1224,21 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
 
               {/* Error Message */}
               {avatarError && (
-                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2.5">
+                <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2.5">
                   <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
                   <span>{avatarError}</span>
                 </div>
               )}
 
-              {/* Input Method Tabs */}
-              <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+              {/* Input Method Tabs - Apple Segmented Control */}
+              <div className="flex rounded-full bg-[#f0f0f2] p-1 text-xs">
                 <button
                   type="button"
                   onClick={() => setAvatarModalTab('upload')}
-                  className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`flex-1 py-1.5 px-3 rounded-full flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     avatarModalTab === 'upload'
-                      ? 'bg-white text-purple-900 shadow-xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
                   <UploadCloud className="w-3.5 h-3.5" />
@@ -1251,10 +1247,10 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
                 <button
                   type="button"
                   onClick={() => setAvatarModalTab('url')}
-                  className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`flex-1 py-1.5 px-3 rounded-full flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     avatarModalTab === 'url'
-                      ? 'bg-white text-purple-900 shadow-xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white text-[#1d1d1f] shadow-xs font-semibold'
+                      : 'text-[#86868b] hover:text-[#1d1d1f]'
                   }`}
                 >
                   <LinkIcon className="w-3.5 h-3.5" />
@@ -1272,24 +1268,24 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
                       const file = e.dataTransfer.files?.[0];
                       if (file) handleModalFileSelect(file);
                     }}
-                    className="border-2 border-dashed border-purple-200 hover:border-purple-400 rounded-2xl p-6 text-center bg-purple-50/30 hover:bg-purple-50/60 transition-colors flex flex-col items-center justify-center gap-2"
+                    className="border border-dashed border-black/15 hover:border-black/30 rounded-3xl p-6 text-center bg-[#fbfbfd] hover:bg-black/[0.02] transition-colors flex flex-col items-center justify-center gap-2"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center mb-1">
+                    <div className="w-12 h-12 rounded-full bg-black/[0.04] text-[#1d1d1f] flex items-center justify-center mb-1">
                       {isProcessingAvatar ? (
-                        <Loader2 className="w-6 h-6 animate-spin text-purple-700" />
+                        <Loader2 className="w-6 h-6 animate-spin text-[#0071e3]" />
                       ) : (
-                        <UploadCloud className="w-6 h-6 text-purple-700" />
+                        <UploadCloud className="w-6 h-6 text-[#1d1d1f]" />
                       )}
                     </div>
-                    <div className="text-xs font-bold text-purple-950">
+                    <div className="text-xs font-semibold text-[#1d1d1f]">
                       ลากรูปภาพมาวางที่นี่ หรือคลิกปุ่มเลือกไฟล์
                     </div>
-                    <p className="text-[11px] text-slate-500 max-w-xs">
+                    <p className="text-[11px] text-[#86868b] max-w-xs">
                       รองรับไฟล์ JPG, PNG, WEBP จากโทรศัพท์มือถือหรือคอมพิวเตอร์
                     </p>
 
-                    <label className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-purple-900 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-all">
-                      <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
+                    <label className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 bg-[#1d1d1f] hover:bg-[#333336] text-white rounded-full text-xs font-medium shadow-xs cursor-pointer transition-all">
+                      <ImageIcon className="w-3.5 h-3.5 text-white" />
                       <span>{isProcessingAvatar ? 'กำลังประมวลผลภาพ...' : 'เลือกรูปภาพจากเครื่อง'}</span>
                       <input
                         type="file"
@@ -1304,10 +1300,10 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
                     </label>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="p-3 rounded-2xl bg-[#fbfbfd] border border-black/[0.05] text-[11px] text-[#515154] flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-[#0071e3] shrink-0 mt-0.5" />
                     <span>
-                      <strong>ระบบบีบอัดภาพอัตโนมัติ:</strong> ปรับขนาดให้คมชัดพอดี (400×400 px) ขนาดไฟล์เล็กเพียง ~30KB ช่วยให้บันทึกผ่านได้ 100% โดยไม่ติดปัญหาความจุ
+                      <strong className="text-[#1d1d1f]">ระบบบีบอัดภาพอัตโนมัติ:</strong> ปรับขนาดให้คมชัดพอดี (400×400 px) ขนาดไฟล์เล็กเพียง ~30KB ช่วยให้บันทึกผ่านได้ 100% โดยไม่ติดปัญหาความจุ
                     </span>
                   </div>
                 </div>
@@ -1317,7 +1313,7 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
               {avatarModalTab === 'url' && (
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    <label className="block text-xs font-medium text-[#1d1d1f] mb-1.5">
                       URL ของรูปภาพ (Direct Link)
                     </label>
                     <div className="flex gap-2">
@@ -1326,18 +1322,18 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
                         value={avatarUrlInput}
                         onChange={(e) => setAvatarUrlInput(e.target.value)}
                         placeholder="https://example.com/my-photo.jpg"
-                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-purple-600 text-xs outline-hidden"
+                        className="flex-1 px-4 py-2 rounded-xl border border-black/10 focus:border-[#0071e3] focus:ring-2 focus:ring-[#0071e3]/20 text-xs outline-hidden"
                       />
                       <button
                         type="button"
                         onClick={handleApplyUrl}
-                        className="px-4 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-800 text-white text-xs font-bold shrink-0 cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-[#1d1d1f] hover:bg-[#333336] text-white text-xs font-medium shrink-0 cursor-pointer"
                       >
                         ลองโหลดภาพ
                       </button>
                     </div>
                   </div>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-[#86868b]">
                     ใส่ลิงก์รูปภาพที่เปิดดูสาธารณะได้ เช่น จากเว็บไซต์โรงเรียน หรือ Google Photos / Drive
                   </p>
                 </div>
@@ -1349,7 +1345,7 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
                   <button
                     type="button"
                     onClick={handleRemoveAvatar}
-                    className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 font-medium py-1 px-2 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 font-medium py-1 px-2.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>ลบรูปภาพนี้ และกลับไปใช้รูปเริ่มต้น</span>
@@ -1359,11 +1355,11 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2.5 px-6 py-4 bg-[#fbfbfd] border-t border-black/[0.06]">
               <button
                 type="button"
                 onClick={() => setIsAvatarModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-full border border-black/10 text-[#515154] hover:bg-black/[0.04] text-xs font-medium transition-colors cursor-pointer"
               >
                 ยกเลิก
               </button>
@@ -1371,16 +1367,16 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
                 type="button"
                 onClick={handleConfirmSaveModal}
                 disabled={isProcessingAvatar}
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#0071e3] hover:bg-[#0077ed] text-white font-medium text-xs shadow-xs transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isProcessingAvatar ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
                     <span>กำลังประมวลผล...</span>
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4 text-slate-950" />
+                    <Check className="w-3.5 h-3.5 text-white" />
                     <span>บันทึกรูปโปรไฟล์ทันที</span>
                   </>
                 )}

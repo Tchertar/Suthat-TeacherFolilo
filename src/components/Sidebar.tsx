@@ -13,10 +13,11 @@ import {
   TrendingUp, 
   Settings,
   ShieldCheck,
-  Menu,
   X,
-  Award
+  ChevronRight,
+  CheckCircle2
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { UserProfile } from '../types';
 
 export type NavTab = 
@@ -57,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'dashboard' as NavTab, label: 'แดชบอร์ดความพร้อม', icon: LayoutDashboard },
     { id: 'profile' as NavTab, label: 'ข้อมูลส่วนตัว / โปรไฟล์ครู', icon: User },
-    { id: 'add-evidence' as NavTab, label: '+ เพิ่มผลงาน/หลักฐาน', icon: PlusCircle, isAddAction: true },
+    { id: 'add-evidence' as NavTab, label: 'เพิ่มผลงานและหลักฐาน', icon: PlusCircle, isAddAction: true },
     { id: 'portfolio' as NavTab, label: 'คลังผลงานทั้งหมด', icon: FolderOpen },
     { id: 'pa1' as NavTab, label: 'ข้อตกลงพัฒนางาน (PA1)', icon: FileText },
     { id: 'challenge' as NavTab, label: 'ประเด็นท้าทาย', icon: Target },
@@ -81,41 +82,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Mobile Drawer Overlay */}
+      {/* Mobile Drawer Backdrop */}
       {isMobileOpen && (
         <div 
-          className="fixed inset-0 bg-purple-950/70 backdrop-blur-xs z-40 lg:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden transition-opacity"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
       <aside
         id="app-sidebar"
-        className={`fixed top-0 left-0 bottom-0 w-68 bg-[#18092E] text-slate-100 flex flex-col z-50 transition-transform duration-200 ease-in-out border-r border-purple-900/60 shadow-2xl ${
+        className={`fixed top-0 left-0 bottom-0 w-68 bg-[#ffffff] text-[#1d1d1f] flex flex-col z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] border-r border-black/[0.08] shadow-[0_0_20px_rgba(0,0,0,0.02)] ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* App Logo & Header with White, Purple, Gold Tech Styling */}
-        <div className="p-5 border-b border-purple-900/60 flex items-center justify-between bg-[#140726]">
+        {/* App Logo & Header in Apple Clean Style */}
+        <div className="p-5 border-b border-black/[0.06] flex items-center justify-between bg-[#ffffff]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-md shadow-amber-500/20 flex items-center justify-center text-slate-950">
-              <div className="w-full h-full rounded-[10px] bg-[#18092E] flex items-center justify-center text-amber-400">
-                <ShieldCheck className="w-5 h-5 text-amber-400" />
-              </div>
+            <div className="w-10 h-10 rounded-2xl bg-[#1d1d1f] text-white flex items-center justify-center shadow-xs">
+              <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <div>
-              <div className="font-bold text-white text-base leading-tight tracking-tight flex items-center gap-1.5">
-                <span>My PA Portfolio</span>
+              <div className="font-semibold text-[#1d1d1f] text-[15px] leading-tight tracking-tight">
+                My PA Portfolio
               </div>
-              <div className="text-xs text-amber-400 font-semibold mt-0.5 flex items-center gap-1">
-                <span>ปีงบประมาณ {fiscalYear}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              <div className="text-[11px] text-[#86868b] font-medium mt-0.5 flex items-center gap-1.5">
+                <span className="px-2 py-0.5 rounded-full bg-black/[0.04] text-[#515154]">ปี {fiscalYear}</span>
               </div>
             </div>
           </div>
           <button 
             id="close-mobile-menu-btn"
-            className="lg:hidden text-purple-300 hover:text-white p-1"
+            className="lg:hidden text-[#86868b] hover:text-[#1d1d1f] p-1.5 rounded-lg hover:bg-black/[0.04] transition-colors"
             onClick={() => setIsMobileOpen(false)}
           >
             <X className="w-5 h-5" />
@@ -123,68 +121,73 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Sync Status Badge */}
-        <div className="px-4 py-2.5 bg-[#120522] border-b border-purple-900/40 flex items-center justify-between text-xs">
-          <span className="text-purple-300/80">Google Workspace:</span>
+        <div className="px-4 py-2 bg-[#fbfbfd] border-b border-black/[0.05] flex items-center justify-between text-xs">
+          <span className="text-[#86868b] font-normal">Google Workspace:</span>
           {isGoogleConnected ? (
-            <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="inline-flex items-center gap-1.5 text-[#34c759] font-medium text-[11px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#34c759]"></span>
               เชื่อมต่อแล้ว
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-amber-400 font-medium">
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span className="inline-flex items-center gap-1.5 text-[#ff9500] font-medium text-[11px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ff9500]"></span>
               พร้อมเชื่อมต่อ
             </span>
           )}
         </div>
 
         {/* Navigation List */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3.5 space-y-1.5 custom-scrollbar">
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1 custom-scrollbar">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentTab === item.id;
             const isAddAction = item.isAddAction;
 
             return (
-              <button
+              <motion.button
                 id={`nav-tab-${item.id}`}
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-left group relative cursor-pointer ${
+                whileHover={{ x: 2 }}
+                whileTap={{ scale: 0.985 }}
+                transition={{ type: 'spring', stiffness: 450, damping: 30 }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13.5px] transition-colors text-left relative cursor-pointer ${
                   isActive
-                    ? 'bg-gradient-to-r from-purple-700 via-purple-600 to-indigo-600 text-white font-semibold shadow-md shadow-purple-950/40 border border-purple-400/30'
+                    ? 'bg-[#0071e3] text-white font-semibold shadow-xs'
                     : isAddAction
-                    ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20 hover:from-amber-300 hover:to-amber-400'
-                    : 'text-purple-200/80 hover:bg-purple-900/40 hover:text-white'
+                    ? 'bg-[#0071e3]/10 text-[#0071e3] font-semibold hover:bg-[#0071e3]/15'
+                    : 'text-[#515154] hover:bg-black/[0.04] hover:text-[#1d1d1f] font-normal'
                 }`}
               >
-                <Icon className={`w-4.5 h-4.5 shrink-0 ${
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${
                   isActive 
-                    ? 'text-amber-300' 
+                    ? 'text-white' 
                     : isAddAction
-                    ? 'text-slate-950'
-                    : 'text-purple-400 group-hover:text-purple-200'
+                    ? 'text-[#0071e3]'
+                    : 'text-[#86868b]'
                 }`} />
-                <span className="truncate flex-1">{item.label}</span>
+                <span className="truncate flex-1 tracking-tight">{item.label}</span>
                 {item.badge !== undefined && (
-                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-slate-950 shrink-0 shadow-xs">
+                  <span className={`px-2 py-0.5 text-[11px] font-bold rounded-full shrink-0 ${
+                    isActive ? 'bg-white text-[#0071e3]' : 'bg-[#ff3b30] text-white'
+                  }`}>
                     {item.badge}
                   </span>
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </nav>
 
-        {/* Bottom Profile Summary - Clicking opens Profile Tab */}
+        {/* Bottom Profile Summary - Apple ID card style */}
         <div 
           onClick={() => handleNavClick('profile')}
-          className="p-3.5 border-t border-purple-900/60 bg-[#140726] hover:bg-[#1a0a33] transition-colors cursor-pointer group"
+          className="p-3.5 border-t border-black/[0.06] bg-[#fbfbfd] hover:bg-black/[0.02] transition-colors cursor-pointer group"
           title="คลิกเพื่อดูและแก้ไขข้อมูลส่วนตัว"
         >
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl overflow-hidden border border-amber-400/70 bg-purple-950 flex items-center justify-center font-bold text-amber-300 text-sm shrink-0 shadow-xs">
+              <div className="w-9 h-9 rounded-full overflow-hidden border border-black/[0.08] bg-[#e5e5ea] flex items-center justify-center font-semibold text-[#1d1d1f] text-xs shrink-0 shadow-2xs">
                 {profile.avatarUrl ? (
                   <img 
                     src={profile.avatarUrl} 
@@ -196,22 +199,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span>{profile.name ? profile.name.slice(0, 2) : 'ครู'}</span>
                 )}
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-[#18092E]"></span>
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#34c759] border-2 border-white"></span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors truncate">
+              <div className="text-xs font-semibold text-[#1d1d1f] group-hover:text-[#0071e3] transition-colors truncate">
                 {profile.name || `${profile.prefix || ''}${profile.firstName} ${profile.lastName}`}
               </div>
-              <div className="text-[11px] text-purple-300 truncate">
+              <div className="text-[11px] text-[#86868b] truncate">
                 {profile.position} ({profile.currentRank || 'คศ.1'})
               </div>
-              <div className="text-[10px] text-amber-400/90 truncate font-medium">
-                คลิกเพื่อแก้ไขโปรไฟล์ ✎
-              </div>
             </div>
+            <ChevronRight className="w-4 h-4 text-[#86868b] group-hover:text-[#0071e3] group-hover:translate-x-0.5 transition-all shrink-0" />
           </div>
         </div>
       </aside>
     </>
   );
 };
+
