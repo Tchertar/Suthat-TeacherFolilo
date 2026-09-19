@@ -21,14 +21,54 @@ export type ActivityType =
   | 'บริการวิชาการ'
   | 'อื่น ๆ';
 
+export interface EducationRecord {
+  id: string;
+  institution: string;
+  level: string;
+  degree: string;
+  major: string;
+  otepcCode: string;
+  graduationDate: string;
+}
+
+export interface LicenseRecord {
+  id: string;
+  type: string;
+  number: string;
+  expireDate: string;
+  status: string;
+}
+
+export interface DecorationRecord {
+  id: string;
+  type: string;
+  receivedDate: string;
+}
+
 export interface UserProfile {
+  prefix: string;
+  firstName: string;
+  lastName: string;
   name: string;
+  email: string;
+  phone: string;
+  idCard: string;
+  birthDate: string;
+  gender: string;
   position: string;
-  academicStanding: string; // วิทยฐานะ (เช่น ชำนาญการ, ชำนาญการพิเศษ, เชี่ยวชาญ)
+  currentRank: string; // เช่น คศ.1
+  academicStanding: string; // วิทยฐานะ (เช่น ครู (ไม่มีวิทยฐานะ), ชำนาญการ, ชำนาญการพิเศษ)
+  positionNumber: string; // เช่น 100721
+  appointmentDate: string; // วันบรรจุ
+  currentPositionDate: string; // วันที่แต่งตั้งตำแหน่งปัจจุบัน
+  entryDate: string; // วันที่เข้าทำงาน/ย้ายเข้า
   school: string;
-  affiliation: string; // สังกัด เช่น สพม., สพป.
+  affiliation: string; // สังกัด เช่น สพม.เลย หนองบัวลำภู
   education: string;
   major: string;
+  educationList: EducationRecord[];
+  licenses: LicenseRecord[];
+  decorations: DecorationRecord[];
   teachingSubjects: string[];
   gradeLevels: string[];
   specialAssignments: string[];

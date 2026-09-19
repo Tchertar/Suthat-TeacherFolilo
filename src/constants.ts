@@ -1,16 +1,53 @@
 import { Criterion, UserProfile, PAPlan, ActivityType } from './types';
 
+import avatarImage from './assets/images/teacher_suthut_avatar_1789808201504.jpg';
+
 export const DEFAULT_PROFILE: UserProfile = {
-  name: 'ครูสุทัศน์ บัวขาว',
+  prefix: 'นาย',
+  firstName: 'สุทัศน์',
+  lastName: 'บุตรชานนท์',
+  name: 'นายสุทัศน์ บุตรชานนท์',
+  email: 'suthut.b@pcshsloei.ac.th',
+  phone: '099-929-6367',
+  idCard: '1-4009-00204-39-1',
+  birthDate: '23 กุมภาพันธ์ 2569',
+  gender: 'ชาย',
   position: 'ครู',
-  academicStanding: 'ชำนาญการพิเศษ',
-  school: 'โรงเรียนสาธิตมัธยมศึกษา',
-  affiliation: 'สำนักงานเขตพื้นที่การศึกษามัธยมศึกษา',
-  education: 'การศึกษามหาบัณฑิต (กศ.ม.) สาขาเทคโนโลยีการศึกษา',
-  major: 'เทคโนโลยีและคอมพิวเตอร์การศึกษา',
-  teachingSubjects: ['วิทยาการคำนวณ ม.4', 'การออกแบบและเทคโนโลยี ม.5', 'โครงงานวิทยาศาสตร์และเทคโนโลยี'],
-  gradeLevels: ['มัธยมศึกษาปีที่ 4', 'มัธยมศึกษาปีที่ 5'],
-  specialAssignments: ['หัวหน้างานสารสนเทศและเทคโนโลยี', 'คณะกรรมการพัฒนาหลักสูตรสถานศึกษา', 'ครูที่ปรึกษา ม.4/2'],
+  currentRank: 'คศ.1',
+  academicStanding: 'ครู (ไม่มีวิทยฐานะ)',
+  positionNumber: '100721',
+  appointmentDate: '14 กุมภาพันธ์ 2567',
+  currentPositionDate: '14 กุมภาพันธ์ 2569',
+  entryDate: '2 กรกฎาคม 2569',
+  school: 'โรงเรียนวิทยาศาสตร์จุฬาภรณราชวิทยาลัย เลย',
+  affiliation: 'สำนักงานเขตพื้นที่การศึกษามัธยมศึกษาเลย หนองบัวลำภู',
+  education: 'ครุศาสตรบัณฑิต (ค.บ.) สาขาวิชาคอมพิวเตอร์ศึกษา',
+  major: 'คอมพิวเตอร์ศึกษา',
+  educationList: [
+    {
+      id: 'EDU-1',
+      institution: 'มหาวิทยาลัยราชภัฏเลย',
+      level: 'ปริญญาตรี หรือ เทียบเท่า',
+      degree: 'ครุศาสตรบัณฑิต (ค.บ.)',
+      major: 'คอมพิวเตอร์ศึกษา',
+      otepcCode: '5720980034013530',
+      graduationDate: '29 มกราคม 2561'
+    }
+  ],
+  licenses: [
+    {
+      id: 'LIC-1',
+      type: 'ใบอนุญาตประกอบวิชาชีพครูชั้นต้น (B License)',
+      number: 'B66201201045623',
+      expireDate: '29 มีนาคม 2571',
+      status: 'ใช้งานได้ (557 วัน)'
+    }
+  ],
+  decorations: [],
+  teachingSubjects: ['วิทยาการคำนวณ', 'การออกแบบและเทคโนโลยี', 'การเขียนโปรแกรมคอมพิวเตอร์', 'วิทยาการข้อมูลและปัญญาประดิษฐ์'],
+  gradeLevels: ['มัธยมศึกษาตอนต้น', 'มัธยมศึกษาตอนปลาย'],
+  specialAssignments: ['งานพัฒนานวัตกรรมและเทคโนโลยีดิจิทัล', 'งานครูที่ปรึกษา', 'งานส่งเสริมโอลิมปิกวิชาการคอมพิวเตอร์'],
+  avatarUrl: avatarImage,
   fiscalYear: '2570'
 };
 

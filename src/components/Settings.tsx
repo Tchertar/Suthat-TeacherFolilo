@@ -17,7 +17,9 @@ import {
   ExternalLink,
   Loader2,
   Trash2,
-  DownloadCloud
+  DownloadCloud,
+  ChevronRight,
+  ShieldCheck
 } from 'lucide-react';
 
 interface SettingsProps {
@@ -28,6 +30,7 @@ interface SettingsProps {
   onUpdateProfile: (newProfile: UserProfile) => void;
   onClearSampleData: () => void;
   evidenceCount: number;
+  onNavigateToProfile?: () => void;
 }
 
 export const Settings: React.FC<SettingsProps> = ({
@@ -37,7 +40,8 @@ export const Settings: React.FC<SettingsProps> = ({
   onUpdateSettings,
   onUpdateProfile,
   onClearSampleData,
-  evidenceCount
+  evidenceCount,
+  onNavigateToProfile
 }) => {
   const [profileForm, setProfileForm] = useState<UserProfile>(profile);
   const [settingsForm, setSettingsForm] = useState<SystemSettings>(settings);
@@ -108,13 +112,13 @@ export const Settings: React.FC<SettingsProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          <SettingsIcon className="w-5 h-5 text-amber-600" />
-          การตั้งค่าระบบ (Settings & Connections)
+      <div className="bg-white rounded-2xl p-6 border border-purple-100 shadow-xs">
+        <h1 className="text-xl font-bold text-purple-950 tracking-tight flex items-center gap-2">
+          <SettingsIcon className="w-5 h-5 text-purple-700" />
+          การตั้งค่าระบบ (Settings &amp; Connections)
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          จัดการการเชื่อมต่อ Google Workspace (Drive/Sheets), ข้อมูลโปรไฟล์ผู้รับการประเมิน และโมเดล AI
+          จัดการการเชื่อมต่อ Google Workspace (Drive/Sheets), ข้อมูลโปรไฟล์ผู้รับการประเมิน และการจัดการฐานข้อมูล
         </p>
       </div>
 
@@ -125,17 +129,46 @@ export const Settings: React.FC<SettingsProps> = ({
         </div>
       )}
 
+      {/* Full Profile Access Banner */}
+      <div className="bg-gradient-to-br from-purple-950 via-purple-900 to-indigo-950 rounded-2xl p-6 border border-purple-800 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-amber-400/20 border border-amber-300/40 text-amber-300 flex items-center justify-center shrink-0">
+            <User className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <span>โปรไฟล์ครูและประวัติการรับราชการฉบับเต็ม</span>
+              <span className="px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 text-xs font-bold border border-amber-400/30">
+                แนะนำ
+              </span>
+            </h2>
+            <p className="text-xs text-purple-200 mt-1 max-w-xl">
+              บันทึกประวัติการศึกษา ใบอนุญาตประกอบวิชาชีพ เครื่องราชอิสริยาภรณ์ วันบรรจุ และภาระงานสอน
+            </p>
+          </div>
+        </div>
+        {onNavigateToProfile && (
+          <button
+            onClick={onNavigateToProfile}
+            className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+          >
+            เปิดหน้าแก้ไขโปรไฟล์ฉบับเต็ม
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
       {/* Google Workspace Setup Section */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-5">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div className="bg-white rounded-2xl p-6 border border-purple-100 shadow-xs space-y-5">
+        <div className="flex items-center justify-between border-b border-purple-100 pb-3">
           <div className="flex items-center gap-2">
-            <Database className="w-5 h-5 text-amber-600" />
+            <Database className="w-5 h-5 text-purple-700" />
             <div>
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-base font-bold text-purple-950">
                 Google Workspace Storage Adapter
               </h2>
               <p className="text-xs text-slate-500">
-                Google Drive = ไฟล์หลักฐานทั้งหมด, Google Sheets = ฐานข้อมูล (Database) หลัก
+                Google Drive = โฟลเดอร์ไฟล์หลักฐาน, Google Sheets = ฐานข้อมูลตารางผลงาน
               </p>
             </div>
           </div>
@@ -146,16 +179,16 @@ export const Settings: React.FC<SettingsProps> = ({
               เชื่อมต่อเรียบร้อยแล้ว
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-50 text-amber-800 text-xs font-bold rounded-full border border-amber-200">
-              <AlertTriangle className="w-3.5 h-3.5" />
+            <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-50 text-amber-900 text-xs font-bold rounded-full border border-amber-300">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
               พร้อมเชื่อมต่อ
             </span>
           )}
         </div>
 
         {googleStatusMsg && (
-          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 flex items-center gap-2">
-            <FolderSync className="w-4 h-4 text-amber-600 shrink-0" />
+          <div className="p-3.5 rounded-xl bg-purple-50/50 border border-purple-100 text-xs text-purple-950 flex items-center gap-2">
+            <FolderSync className="w-4 h-4 text-purple-700 shrink-0" />
             <span>{googleStatusMsg}</span>
           </div>
         )}
@@ -177,7 +210,7 @@ export const Settings: React.FC<SettingsProps> = ({
                     href={settingsForm.spreadsheetUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-amber-700 font-bold hover:underline inline-flex items-center gap-1"
+                    className="text-purple-800 font-bold hover:underline inline-flex items-center gap-1"
                   >
                     เปิดดู Spreadsheet ใน Google Sheets <ExternalLink className="w-3.5 h-3.5" />
                   </a>
@@ -188,7 +221,7 @@ export const Settings: React.FC<SettingsProps> = ({
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={handleDisconnect}
-                className="px-3.5 py-1.5 border border-slate-300 text-slate-600 hover:text-rose-600 text-xs font-semibold rounded-lg hover:bg-slate-50"
+                className="px-3.5 py-1.5 border border-slate-300 text-slate-600 hover:text-rose-600 text-xs font-semibold rounded-lg hover:bg-slate-50 cursor-pointer"
               >
                 ตัดการเชื่อมต่อ
               </button>
@@ -197,22 +230,22 @@ export const Settings: React.FC<SettingsProps> = ({
         ) : (
           <div className="space-y-4">
             <p className="text-xs text-slate-600 leading-relaxed">
-              เมื่อกดปุ่มด้านล่าง ระบบจะขออนุญาตผ่าน Google OAuth ของบัญชีของคุณ เพื่อสร้างโฟลเดอร์จัดเก็บหลักฐานบน Google Drive และสร้าง Spreadsheet ฐานข้อมูลโดยอัตโนมัติ โดยไม่มีค่าใช้จ่ายเพิ่มเติม
+              เมื่อกดปุ่มด้านล่าง ระบบจะขออนุญาตผ่าน Google OAuth ของบัญชีของคุณ เพื่อสร้างโฟลเดอร์จัดเก็บหลักฐานบน Google Drive และสร้าง Spreadsheet ฐานข้อมูลโดยอัตโนมัติ
             </p>
             <button
               onClick={handleConnectGoogle}
               disabled={isConnectingGoogle}
-              className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
             >
               {isConnectingGoogle ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
                   กำลังเชื่อมต่อ Google Workspace...
                 </>
               ) : (
                 <>
-                  <FolderSync className="w-4 h-4" />
-                  เชื่อมต่อ Google Drive & Google Sheets ตอนนี้
+                  <FolderSync className="w-4 h-4 text-slate-950" />
+                  เชื่อมต่อ Google Drive &amp; Google Sheets ตอนนี้
                 </>
               )}
             </button>
@@ -220,87 +253,25 @@ export const Settings: React.FC<SettingsProps> = ({
         )}
       </div>
 
-      {/* Profile Settings */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-        <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-          <User className="w-4.5 h-4.5 text-amber-600" />
-          ข้อมูลส่วนตัวและบริบทผู้รับการประเมิน (Personal Context สำหรับ AI)
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">ชื่อ-สกุล</label>
-            <input
-              type="text"
-              value={profileForm.name}
-              onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">วิทยฐานะ</label>
-            <select
-              value={profileForm.academicStanding}
-              onChange={(e) => setProfileForm({ ...profileForm, academicStanding: e.target.value })}
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"
-            >
-              <option value="ครู (ไม่มีวิทยฐานะ)">ครู (ไม่มีวิทยฐานะ)</option>
-              <option value="ชำนาญการ">ชำนาญการ (ริเริ่ม พัฒนา)</option>
-              <option value="ชำนาญการพิเศษ">ชำนาญการพิเศษ (คิดค้น ปรับเปลี่ยน)</option>
-              <option value="เชี่ยวชาญ">เชี่ยวชาญ (สร้างสรรค์ ปรับเปลี่ยน)</option>
-              <option value="เชี่ยวชาญพิเศษ">เชี่ยวชาญพิเศษ (ประดิษฐ์ คิดค้น)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">สถานศึกษา</label>
-            <input
-              type="text"
-              value={profileForm.school}
-              onChange={(e) => setProfileForm({ ...profileForm, school: e.target.value })}
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">สังกัด</label>
-            <input
-              type="text"
-              value={profileForm.affiliation}
-              onChange={(e) => setProfileForm({ ...profileForm, affiliation: e.target.value })}
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end pt-2">
-          <button
-            onClick={handleSaveProfile}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
-          >
-            บันทึกข้อมูลโปรไฟล์
-          </button>
-        </div>
-      </div>
-
       {/* Sample Data Management */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-3">
-        <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
+      <div className="bg-white rounded-2xl p-6 border border-purple-100 shadow-xs space-y-3">
+        <h2 className="text-base font-bold text-purple-950 border-b border-purple-100 pb-2 flex items-center gap-2">
           <Trash2 className="w-4.5 h-4.5 text-rose-500" />
-          การจัดการข้อมูลตัวอย่าง (Sample Data)
+          การจัดการข้อมูลในระบบ
         </h2>
         <p className="text-xs text-slate-500">
-          ปัจจุบันในระบบมีผลงานทั้งหมด {evidenceCount} รายการ คุณสามารถล้างข้อมูลตัวอย่างเริ่มต้นออกได้เมื่อพร้อมบันทึกงานจริง
+          ปัจจุบันในระบบมีผลงานทั้งหมด {evidenceCount} รายการ (ข้อมูลจำลองตัวอย่างได้ถูกลบออกเรียบร้อยแล้วเพื่อให้ระบบสะอาดพร้อมบันทึกงานจริง)
         </p>
-        <div className="pt-1">
-          <button
-            onClick={onClearSampleData}
-            className="px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-semibold text-xs rounded-xl transition-colors"
-          >
-            ลบข้อมูลตัวอย่างทั้งหมด
-          </button>
-        </div>
+        {evidenceCount > 0 && (
+          <div className="pt-1">
+            <button
+              onClick={onClearSampleData}
+              className="px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+            >
+              ลบผลงานทั้งหมดเพื่อเริ่มต้นใหม่
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

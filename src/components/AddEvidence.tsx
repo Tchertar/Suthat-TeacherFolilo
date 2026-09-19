@@ -279,11 +279,11 @@ export const AddEvidenceModal: React.FC<AddEvidenceProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs">
+      <div className="bg-white rounded-2xl p-6 border border-purple-100 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-base">
+            <h1 className="text-xl font-bold text-purple-950 tracking-tight flex items-center gap-2">
+              <span className="w-8 h-8 rounded-lg bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-base border border-purple-200">
                 +
               </span>
               บันทึกผลงาน / กิจกรรมใหม่
@@ -293,7 +293,7 @@ export const AddEvidenceModal: React.FC<AddEvidenceProps> = ({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-amber-50 text-amber-800 text-xs font-semibold rounded-full border border-amber-200">
+            <span className="px-3 py-1 bg-amber-50 text-amber-900 text-xs font-semibold rounded-full border border-amber-300">
               ปีงบประมาณ {fiscalYear}
             </span>
           </div>
@@ -467,15 +467,15 @@ export const AddEvidenceModal: React.FC<AddEvidenceProps> = ({
               )}
             </div>
 
-            {/* AI Assistant Quick Trigger */}
-            <div className="p-4 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50/50 border border-amber-200/80 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            {/* AI Assistant Quick Trigger (Purple & Gold Tech) */}
+            <div className="p-5 bg-gradient-to-br from-purple-950 via-purple-900 to-indigo-950 border border-purple-800 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-white shadow-md">
               <div>
-                <div className="text-sm font-bold text-amber-900 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-600" />
-                  AI Analysis & Writing Engine
+                <div className="text-sm font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  AI Analysis &amp; Writing Engine
                 </div>
-                <div className="text-xs text-amber-800/80 mt-0.5">
-                  กดปุ่มนี้เพื่อให้ Gemini วิเคราะห์หาตัวชี้วัดที่สอดคล้อง แนะนำสิ่งที่ยังขาด และร่างข้อความรายงานทันที
+                <div className="text-xs text-purple-200/90 mt-1 leading-relaxed">
+                  คลิกเพื่อให้ Gemini AI ช่วยวิเคราะห์เชื่อมโยงตัวชี้วัด แนะนำสิ่งที่ยังขาด และร่างข้อความรายงานทันที
                 </div>
               </div>
               <button
@@ -483,7 +483,7 @@ export const AddEvidenceModal: React.FC<AddEvidenceProps> = ({
                 type="button"
                 onClick={handleTriggerAI}
                 disabled={isAnalyzing || !title.trim()}
-                className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-semibold text-xs rounded-xl shadow-xs flex items-center gap-2 shrink-0 transition-all cursor-pointer"
+                className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-50 text-slate-950 font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 flex items-center gap-2 shrink-0 transition-all cursor-pointer"
               >
                 {isAnalyzing ? (
                   <>
@@ -492,7 +492,7 @@ export const AddEvidenceModal: React.FC<AddEvidenceProps> = ({
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4 text-slate-950" />
                     วิเคราะห์ผลงานด้วย AI
                   </>
                 )}
@@ -502,15 +502,15 @@ export const AddEvidenceModal: React.FC<AddEvidenceProps> = ({
 
           {/* AI Result Card (Shows when analyzed) */}
           {aiResult && (
-            <div className="bg-white rounded-2xl p-6 border-2 border-amber-400/60 shadow-md space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="bg-white rounded-2xl p-6 border-2 border-purple-300 shadow-md space-y-4">
+              <div className="flex items-center justify-between border-b border-purple-100 pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-1 bg-amber-100 text-amber-900 text-xs font-bold rounded-lg flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="px-2.5 py-1 bg-purple-100 text-purple-950 text-xs font-bold rounded-lg flex items-center gap-1 border border-purple-200">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                     AI แนะนำ (ความมั่นใจ {aiResult.confidence}%)
                   </span>
                   <span className="text-xs text-slate-400">
-                    * คุณสามารถปรับเปลี่ยนตัวชี้วัดได้ก่อนบันทึก
+                    * คุณครูสามารถปรับเปลี่ยนตัวชี้วัดได้ก่อนบันทึก
                   </span>
                 </div>
               </div>
