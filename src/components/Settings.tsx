@@ -4,7 +4,9 @@ import {
   requestGoogleAccessToken, 
   getOrCreateDriveFolder, 
   createMasterSpreadsheet,
-  clearStoredToken
+  clearStoredToken,
+  signInWithGSI,
+  setManualAccessToken
 } from '../services/googleWorkspaceService';
 import { 
   Settings as SettingsIcon, 
@@ -19,7 +21,11 @@ import {
   Trash2,
   DownloadCloud,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Copy,
+  Check,
+  Key,
+  Globe
 } from 'lucide-react';
 
 interface SettingsProps {
@@ -47,7 +53,21 @@ export const Settings: React.FC<SettingsProps> = ({
   const [settingsForm, setSettingsForm] = useState<SystemSettings>(settings);
   const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
   const [googleStatusMsg, setGoogleStatusMsg] = useState('');
+  const [googleErrorDetails, setGoogleErrorDetails] = useState<{ isUnauthorizedDomain?: boolean; msg?: string } | null>(null);
+  const [showManualToken, setShowManualToken] = useState(false);
+  const [manualTokenInput, setManualTokenInput] = useState('');
+  const [copiedDomain, setCopiedDomain] = useState(false);
   const [savedNotice, setSavedNotice] = useState(false);
+
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
+
+  const copyDomainToClipboard = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(currentHostname);
+      setCopiedDomain(true);
+      setTimeout(() => setCopiedDomain(false), 2500);
+    }
+  };
 
   // Profile Save
   const handleSaveProfile = () => {
@@ -56,41 +76,97 @@ export const Settings: React.FC<SettingsProps> = ({
     setTimeout(() => setSavedNotice(false), 3000);
   };
 
+  // Helper to complete Workspace setup once token is obtained
+  const completeWorkspaceSetup = async (token: string) => {
+    setGoogleStatusMsg('กำลังสร้าง/ตรวจสอบโฟลเดอร์หลัก "My_PA_Portfolio" ใน Google Drive...');
+
+    // 1. Root Drive Folder
+    const rootFolder = await getOrCreateDriveFolder('My_PA_Portfolio', undefined, token);
+
+    // 2. Year subfolder
+    setGoogleStatusMsg(`กำลังสร้างโฟลเดอร์ปีงบประมาณ "${profileForm.fiscalYear}" ใน Google Drive...`);
+    const yearFolder = await getOrCreateDriveFolder(profileForm.fiscalYear, rootFolder.id, token);
+
+    // 3. Master Spreadsheet DB
+    setGoogleStatusMsg('กำลังเตรียมสร้าง Master Spreadsheet "MyPA_Portfolio_DB" พร้อมตารางโครงสร้าง...');
+    const sheet = await createMasterSpreadsheet(`MyPA_Portfolio_DB_${profileForm.fiscalYear}`, yearFolder.id, token);
+
+    const updated = {
+      ...settingsForm,
+      isGoogleConnected: true,
+      driveFolderId: yearFolder.id,
+      driveFolderName: `My_PA_Portfolio/${profileForm.fiscalYear}`,
+      spreadsheetId: sheet.spreadsheetId,
+      spreadsheetUrl: sheet.spreadsheetUrl
+    };
+
+    setSettingsForm(updated);
+    onUpdateSettings(updated);
+    setGoogleErrorDetails(null);
+    setGoogleStatusMsg('เชื่อมต่อ Google Drive และสร้าง Google Sheets Database สำเร็จเรียบร้อย!');
+  };
+
   // Connect Google Workspace (Create Drive Folder & Spreadsheet Database)
   const handleConnectGoogle = async () => {
     setIsConnectingGoogle(true);
+    setGoogleErrorDetails(null);
     setGoogleStatusMsg('กำลังขอสิทธิ์การเข้าถึง Google Workspace (Drive & Sheets)...');
 
     try {
       const token = await requestGoogleAccessToken(true);
-      setGoogleStatusMsg('กำลังสร้าง/ตรวจสอบโฟลเดอร์หลัก "My_PA_Portfolio" ใน Google Drive...');
-
-      // 1. Root Drive Folder
-      const rootFolder = await getOrCreateDriveFolder('My_PA_Portfolio', undefined, token);
-
-      // 2. Year subfolder
-      setGoogleStatusMsg(`กำลังสร้างโฟลเดอร์ปีงบประมาณ "${profileForm.fiscalYear}" ใน Google Drive...`);
-      const yearFolder = await getOrCreateDriveFolder(profileForm.fiscalYear, rootFolder.id, token);
-
-      // 3. Master Spreadsheet DB
-      setGoogleStatusMsg('กำลังเตรียมสร้าง Master Spreadsheet "MyPA_Portfolio_DB" พร้อมตารางโครงสร้าง...');
-      const sheet = await createMasterSpreadsheet(`MyPA_Portfolio_DB_${profileForm.fiscalYear}`, yearFolder.id, token);
-
-      const updated = {
-        ...settingsForm,
-        isGoogleConnected: true,
-        driveFolderId: yearFolder.id,
-        driveFolderName: `My_PA_Portfolio/${profileForm.fiscalYear}`,
-        spreadsheetId: sheet.spreadsheetId,
-        spreadsheetUrl: sheet.spreadsheetUrl
-      };
-
-      setSettingsForm(updated);
-      onUpdateSettings(updated);
-      setGoogleStatusMsg('เชื่อมต่อ Google Drive และสร้าง Google Sheets Database สำเร็จเรียบร้อย!');
+      await completeWorkspaceSetup(token);
     } catch (err: any) {
-      console.error(err);
-      setGoogleStatusMsg(`เกิดข้อผิดพลาด: ${err.message || 'ไม่สามารถเชื่อมต่อได้'}`);
+      console.error('Connection error:', err);
+      const msg = err.message || 'ไม่สามารถเชื่อมต่อได้';
+      const isUnauth = msg.includes('unauthorized-domain') || msg.includes('Authorized Domains');
+      setGoogleErrorDetails({
+        isUnauthorizedDomain: isUnauth,
+        msg
+      });
+      setGoogleStatusMsg(`เกิดข้อผิดพลาด: ${msg}`);
+    } finally {
+      setIsConnectingGoogle(false);
+    }
+  };
+
+  // Connect directly with GSI
+  const handleConnectGSI = async () => {
+    setIsConnectingGoogle(true);
+    setGoogleErrorDetails(null);
+    setGoogleStatusMsg('กำลังเปิดหน้าต่างลงชื่อเข้าใช้ Google Identity Services...');
+
+    try {
+      const res = await signInWithGSI();
+      await completeWorkspaceSetup(res.accessToken);
+    } catch (err: any) {
+      console.error('GSI Connection error:', err);
+      const msg = err.message || 'ไม่สามารถเชื่อมต่อได้';
+      setGoogleErrorDetails({
+        isUnauthorizedDomain: msg.includes('unauthorized-domain'),
+        msg
+      });
+      setGoogleStatusMsg(`เกิดข้อผิดพลาด: ${msg}`);
+    } finally {
+      setIsConnectingGoogle(false);
+    }
+  };
+
+  // Connect using manual token
+  const handleConnectManualToken = async () => {
+    if (!manualTokenInput.trim()) return;
+    setIsConnectingGoogle(true);
+    setGoogleErrorDetails(null);
+    setGoogleStatusMsg('กำลังตรวจสอบ Access Token...');
+
+    try {
+      setManualAccessToken(manualTokenInput.trim());
+      await completeWorkspaceSetup(manualTokenInput.trim());
+      setShowManualToken(false);
+      setManualTokenInput('');
+    } catch (err: any) {
+      console.error('Manual Token error:', err);
+      setGoogleErrorDetails({ msg: err.message });
+      setGoogleStatusMsg(`เกิดข้อผิดพลาดในการใช้ Token: ${err.message}`);
     } finally {
       setIsConnectingGoogle(false);
     }
@@ -187,9 +263,94 @@ export const Settings: React.FC<SettingsProps> = ({
         </div>
 
         {googleStatusMsg && (
-          <div className="p-3.5 rounded-xl bg-purple-50/50 border border-purple-100 text-xs text-purple-950 flex items-center gap-2">
-            <FolderSync className="w-4 h-4 text-purple-700 shrink-0" />
-            <span>{googleStatusMsg}</span>
+          <div className={`p-4 rounded-xl text-xs flex items-start gap-3 ${
+            googleErrorDetails ? 'bg-rose-50/80 border border-rose-200 text-rose-900' : 'bg-purple-50/50 border border-purple-100 text-purple-950'
+          }`}>
+            <FolderSync className={`w-4 h-4 mt-0.5 shrink-0 ${googleErrorDetails ? 'text-rose-600' : 'text-purple-700'}`} />
+            <div className="flex-1 space-y-2">
+              <p className="font-medium leading-relaxed">{googleStatusMsg}</p>
+
+              {/* Specific Guidance for auth/unauthorized-domain */}
+              {googleErrorDetails?.isUnauthorizedDomain && (
+                <div className="mt-3 p-3.5 bg-white/90 rounded-xl border border-rose-200/80 space-y-3 shadow-2xs">
+                  <div className="flex items-center gap-1.5 text-slate-800 font-semibold">
+                    <Globe className="w-4 h-4 text-purple-600" />
+                    <span>คำแนะนำในการแก้ไขปัญหาโดเมนเชื่อมต่อ (Domain Authorization)</span>
+                  </div>
+                  <p className="text-slate-600 text-2xs leading-relaxed">
+                    ข้อผิดพลาด <span className="font-mono text-rose-600 font-bold">auth/unauthorized-domain</span> เกิดจากระบบรักษาความปลอดภัยของ Firebase ที่ยังไม่ได้ลงทะเบียนชื่อโดเมนปัจจุบัน (<span className="font-mono font-bold text-slate-800">{currentHostname}</span>) ใน Authorized Domains
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {/* Direct GSI Button */}
+                    <button
+                      onClick={handleConnectGSI}
+                      disabled={isConnectingGoogle}
+                      className="px-3 py-1.5 bg-purple-700 hover:bg-purple-800 text-white font-semibold rounded-lg shadow-2xs text-2xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      เชื่อมต่อตรงด้วย Google Identity Services (แนะนำ)
+                    </button>
+
+                    {/* Open in New Window Button */}
+                    <button
+                      onClick={() => window.open(window.location.href, '_blank')}
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-2xs transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      เปิดแอปในหน้าต่างใหม่
+                    </button>
+
+                    {/* Copy Domain Button */}
+                    <button
+                      onClick={copyDomainToClipboard}
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-2xs transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedDomain ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedDomain ? 'คัดลอกชื่อโดเมนแล้ว' : 'คัดลอกชื่อโดเมน'}</span>
+                    </button>
+
+                    {/* Toggle Manual Token */}
+                    <button
+                      onClick={() => setShowManualToken(!showManualToken)}
+                      className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium rounded-lg text-2xs transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <Key className="w-3.5 h-3.5" />
+                      <span>{showManualToken ? 'ซ่อนช่องระบุ Token' : 'ระบุ Access Token โดยตรง'}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Manual Access Token Input Option */}
+        {showManualToken && !settingsForm.isGoogleConnected && (
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 text-xs">
+            <div className="flex items-center gap-1.5 font-bold text-slate-800">
+              <Key className="w-4 h-4 text-purple-700" />
+              <span>ระบุ Google OAuth Access Token ด้วยตนเอง (Developer / Advanced Option)</span>
+            </div>
+            <p className="text-slate-500 text-2xs">
+              หากมี OAuth Access Token ที่สร้างจาก Google OAuth Playground หรือบัญชีองค์กร สามารถนำมาวางที่นี่เพื่อเริ่มต้นสร้างฐานข้อมูล Drive &amp; Sheets ได้ทันที
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                placeholder="วาง Access Token ที่ขึ้นต้นด้วย ya29...."
+                value={manualTokenInput}
+                onChange={(e) => setManualTokenInput(e.target.value)}
+                className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-lg font-mono text-2xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-purple-600"
+              />
+              <button
+                onClick={handleConnectManualToken}
+                disabled={isConnectingGoogle || !manualTokenInput.trim()}
+                className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+              >
+                {isConnectingGoogle ? 'กำลังเชื่อมต่อ...' : 'ยืนยันและเชื่อมต่อ'}
+              </button>
+            </div>
           </div>
         )}
 

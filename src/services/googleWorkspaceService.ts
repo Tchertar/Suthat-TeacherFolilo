@@ -30,6 +30,101 @@ let cachedAccessToken: string | null = null;
 let isSigningIn = false;
 
 /**
+ * Ensures Google Identity Services (GSI) SDK is loaded in the window
+ */
+export async function ensureGSILoaded(timeoutMs = 6000): Promise<void> {
+  if (typeof window === 'undefined') return;
+  if ((window as any).google?.accounts?.oauth2) return;
+
+  return new Promise((resolve) => {
+    const checkInterval = setInterval(() => {
+      if ((window as any).google?.accounts?.oauth2) {
+        clearInterval(checkInterval);
+        resolve();
+      }
+    }, 100);
+
+    // Timeout safety
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      resolve();
+    }, timeoutMs);
+  });
+}
+
+/**
+ * Sign in using Google Identity Services (GSI) Token Client.
+ * GSI uses standard client-side OAuth 2.0 and bypasses Firebase Auth's
+ * "auth/unauthorized-domain" whitelist restrictions on ephemeral container domains.
+ */
+export const signInWithGSI = async (): Promise<{ user: any; accessToken: string }> => {
+  await ensureGSILoaded();
+
+  const google = (window as any).google;
+  if (!google?.accounts?.oauth2) {
+    throw new Error('Google Identity Services SDK ยังไม่โหลดเสร็จสมบูรณ์ โปรดเปิดแอปในหน้าต่างใหม่หรือลองใหม่อีกครั้ง');
+  }
+
+  const clientId = firebaseConfig.oAuthClientId;
+  if (!clientId) {
+    throw new Error('ไม่พบ OAuth Client ID ใน firebase-applet-config.json');
+  }
+
+  return new Promise((resolve, reject) => {
+    try {
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+        callback: async (response: any) => {
+          if (response.error) {
+            console.error('Google OAuth token error:', response);
+            if (response.error === 'popup_closed_by_user') {
+              return reject(new Error('การลงชื่อเข้าใช้ถูกยกเลิก (หน้าต่าง Pop-up ถูกปิด)'));
+            }
+            if (response.error === 'access_denied') {
+              return reject(new Error('ผู้ใช้ปฏิเสธการให้สิทธิ์การเข้าถึง Google Drive & Sheets'));
+            }
+            return reject(new Error(`Google OAuth error: ${response.error_description || response.error}`));
+          }
+
+          if (!response.access_token) {
+            return reject(new Error('ไม่ได้รับ Access Token จาก Google'));
+          }
+
+          cachedAccessToken = response.access_token;
+
+          // Retrieve user profile information using the access token
+          let userInfo: any = null;
+          try {
+            const uRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: `Bearer ${response.access_token}` }
+            });
+            if (uRes.ok) {
+              userInfo = await uRes.json();
+            }
+          } catch (e) {
+            console.warn('Could not fetch user profile:', e);
+          }
+
+          resolve({
+            user: userInfo || { email: 'user@google.com', displayName: 'Google User' },
+            accessToken: response.access_token
+          });
+        },
+        error_callback: (err: any) => {
+          console.error('GSI client error:', err);
+          reject(new Error(err?.message || 'เกิดข้อผิดพลาดในการเปิดหน้าต่างลงชื่อเข้าใช้ Google'));
+        }
+      });
+
+      client.requestAccessToken({ prompt: 'select_account' });
+    } catch (err: any) {
+      reject(err);
+    }
+  });
+};
+
+/**
  * Initialize auth listener to monitor sign-in state
  */
 export const initAuth = (
@@ -51,19 +146,63 @@ export const initAuth = (
 };
 
 /**
- * Perform Google Sign-in with Drive & Sheets scopes
+ * Perform Google Sign-in with Drive & Sheets scopes.
+ * Tries Google Identity Services first to prevent auth/unauthorized-domain errors,
+ * falling back gracefully to Firebase Auth popup.
  */
-export const googleSignIn = async (): Promise<{ user: User; accessToken: string }> => {
+export const googleSignIn = async (): Promise<{ user: any; accessToken: string }> => {
   try {
     isSigningIn = true;
-    const result = await signInWithPopup(auth, googleProvider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    if (!credential?.accessToken) {
-      throw new Error('ไม่สามารถดึง Access Token จาก Google ได้');
+
+    // Strategy 1: Google Identity Services (GSI) Token Client
+    // This connects directly to Google OAuth2 and avoids Firebase Authorized Domain whitelist blocking
+    if ((window as any).google?.accounts?.oauth2) {
+      try {
+        return await signInWithGSI();
+      } catch (gsiErr: any) {
+        console.warn('GSI login failed, trying Firebase popup fallback:', gsiErr);
+        // If user cancelled, don't fallback to another popup
+        if (gsiErr?.message?.includes('ยกเลิก') || gsiErr?.message?.includes('popup_closed')) {
+          throw gsiErr;
+        }
+      }
     }
 
-    cachedAccessToken = credential.accessToken;
-    return { user: result.user, accessToken: cachedAccessToken };
+    // Strategy 2: Firebase Auth signInWithPopup
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (!credential?.accessToken) {
+        throw new Error('ไม่สามารถดึง Access Token จาก Google ได้');
+      }
+
+      cachedAccessToken = credential.accessToken;
+      return { user: result.user, accessToken: cachedAccessToken };
+    } catch (fbErr: any) {
+      console.error('Firebase Auth error:', fbErr);
+
+      // If Firebase blocked the domain, try GSI one more time after ensuring SDK loaded
+      if (fbErr?.code === 'auth/unauthorized-domain' || fbErr?.message?.includes('unauthorized-domain')) {
+        try {
+          return await signInWithGSI();
+        } catch (retryGsiErr: any) {
+          const currentDomain = typeof window !== 'undefined' ? window.location.hostname : '';
+          throw new Error(
+            `โดเมน "${currentDomain}" ยังไม่ได้รับอนุญาตใน Firebase Authorized Domains (auth/unauthorized-domain) กรุณาเปิดแอปในแท็บใหม่ หรือเพิ่มโดเมนใน Firebase Console`
+          );
+        }
+      }
+
+      if (fbErr?.code === 'auth/popup-blocked') {
+        throw new Error('เบราว์เซอร์บล็อกหน้าต่าง Pop-up กรุณาอนุญาต Pop-up หรือเปิดในแท็บใหม่แล้วลองอีกครั้ง');
+      }
+
+      if (fbErr?.code === 'auth/popup-closed-by-user') {
+        throw new Error('การลงชื่อเข้าใช้ถูกยกเลิก (หน้าต่าง Pop-up ถูกปิด)');
+      }
+
+      throw fbErr;
+    }
   } catch (error: any) {
     console.error('Google Sign in error:', error);
     throw error;
@@ -89,13 +228,21 @@ export async function requestGoogleAccessToken(promptUser = true): Promise<strin
   throw new Error('ยังไม่ได้เข้าสู่ระบบ Google หรือ Token หมดอายุ');
 }
 
+export function setManualAccessToken(token: string) {
+  cachedAccessToken = token.trim();
+}
+
 export function getStoredToken(): string | null {
   return cachedAccessToken;
 }
 
 export async function clearStoredToken() {
   cachedAccessToken = null;
-  await signOut(auth);
+  try {
+    await signOut(auth);
+  } catch (e) {
+    // ignore
+  }
 }
 
 // ---------------- Google Drive API Helpers ---------------- //
