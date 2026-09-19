@@ -8,7 +8,7 @@ import {
   AIAnalysisResult 
 } from '../types';
 import { ACTIVITY_TYPES } from '../constants';
-import { analyzeEvidenceWithAI } from '../services/aiService';
+import { analyzeEvidenceWithAI, expandDescriptionWithAI } from '../services/aiService';
 import { uploadFileToDrive, appendEvidenceToSheet } from '../services/googleWorkspaceService';
 import { 
   Sparkles, 
@@ -22,7 +22,8 @@ import {
   Loader2,
   Trash2,
   ExternalLink,
-  ShieldAlert
+  ShieldAlert,
+  Award
 } from 'lucide-react';
 
 interface AddEvidenceProps {
@@ -84,6 +85,60 @@ export const AddEvidenceModal: React.FC<AddEvidenceProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isExpandingDescription, setIsExpandingDescription] = useState(false);
+  const [expandNotice, setExpandNotice] = useState<string | null>(null);
+
+  const standing = profile.academicStanding || 'ชำนาญการพิเศษ';
+
+  // AI Expand Description by Academic Standing
+  const handleAIExpandDescription = async () => {
+    if (!title.trim() && !description.trim()) {
+      setErrorMessage('กรุณากรอกชื่อผลงานหรือคำอธิบายสั้น ๆ ก่อนให้ AI ขยายความ');
+      return;
+    }
+    setErrorMessage('');
+    setIsExpandingDescription(true);
+
+    try {
+      const expanded = await expandDescriptionWithAI(
+        {
+          title,
+          description,
+          activity_type: activityType,
+          subject,
+          grade_level: gradeLevel,
+          process: processText,
+          output,
+          outcome
+        },
+        profile
+      );
+
+      setDescription(expanded.expandedDescription);
+      if (expanded.process) setProcessText(expanded.process);
+      if (expanded.output) setOutput(expanded.output);
+      if (expanded.outcome) setOutcome(expanded.outcome);
+      if (expanded.quantitativeResult) setQuantitativeResult(expanded.quantitativeResult);
+      if (expanded.qualitativeResult) setQualitativeResult(expanded.qualitativeResult);
+
+      if (expanded.suggestedCriteriaIds && expanded.suggestedCriteriaIds.length > 0) {
+        if (!selectedPrimaryCriterion) {
+          setSelectedPrimaryCriterion(expanded.suggestedCriteriaIds[0]);
+        }
+        setSelectedSecondaryCriteria(prev => 
+          Array.from(new Set([...prev, ...expanded.suggestedCriteriaIds.slice(1)]))
+        );
+      }
+
+      setShowExtended(true);
+      setExpandNotice(`AI ขยายความตามวิทยฐานะ "${standing}" เรียบร้อยแล้ว (มาตรฐาน: "${expanded.pedagogicalLevelVerb}")`);
+      setTimeout(() => setExpandNotice(null), 6000);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'การขยายความล้มเหลว กรุณาลองใหม่อีกครั้ง');
+    } finally {
+      setIsExpandingDescription(false);
+    }
+  };
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
@@ -407,13 +462,42 @@ export const AddEvidenceModal: React.FC<AddEvidenceProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                คำอธิบายสั้น ๆ / สภาพปัญหาและสิ่งที่ดำเนินการ <span className="text-slate-400 font-normal">(ให้ข้อมูลเพื่อที่ AI จะนำไปวิเคราะห์ได้อย่างแม่นยำ)</span>
-              </label>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700">
+                  คำอธิบายรายละเอียดผลงาน / สิ่งที่ดำเนินการ <span className="text-slate-400 font-normal">(ยึดเกณฑ์ ว.PA)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAIExpandDescription}
+                  disabled={isExpandingDescription}
+                  className="px-3 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-medium text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer self-start sm:self-auto disabled:opacity-50"
+                  title="ให้ AI ขยายความคำอธิบายและจัดกระบวนการตามระดับวิทยฐานะ"
+                >
+                  {isExpandingDescription ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-700" />
+                      <span>กำลังขยายความ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                      <span>AI ขยายความตามวิทยฐานะ ({standing})</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {expandNotice && (
+                <div className="mb-2 p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{expandNotice}</span>
+                </div>
+              )}
+
               <textarea
                 id="evidence-description-textarea"
                 rows={3}
-                placeholder="ระบุสิ่งที่ทำ ผลที่เกิดขึ้นกับนักเรียน หรือเหตุการณ์สำคัญ..."
+                placeholder="ระบุสิ่งที่ทำ หรือพิมพ์สั้น ๆ แล้วกดปุ่ม 'AI ขยายความตามวิทยฐานะ' เพื่อให้ระบบช่วยเรียบเรียงให้อัตโนมัติ..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"

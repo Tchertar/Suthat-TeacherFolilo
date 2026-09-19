@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { EvidenceItem, Criterion } from '../types';
+import { EvidenceItem, Criterion, UserProfile } from '../types';
 import { formatToThaiDate } from '../utils/dateUtils';
 import { 
   Search, 
@@ -15,17 +15,24 @@ import {
   LayoutGrid,
   List,
   FolderOpen,
-  Plus
+  Plus,
+  Edit3,
+  Layers,
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface PortfolioProps {
   evidenceList: EvidenceItem[];
   criteria: Criterion[];
+  profile: UserProfile;
   fiscalYear: string;
   onSelectEvidence: (evidence: EvidenceItem) => void;
+  onEditEvidence: (evidence: EvidenceItem) => void;
   onDeleteEvidence: (evidenceId: string) => void;
   onNavigateAdd: () => void;
+  onBatchAutoMap?: () => Promise<void>;
 }
 
 const containerVariants = {
@@ -51,15 +58,20 @@ const itemVariants = {
 export const Portfolio: React.FC<PortfolioProps> = ({
   evidenceList,
   criteria,
+  profile,
   fiscalYear,
   onSelectEvidence,
+  onEditEvidence,
   onDeleteEvidence,
-  onNavigateAdd
+  onNavigateAdd,
+  onBatchAutoMap
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedActivityType, setSelectedActivityType] = useState<string>('ALL');
   const [selectedCriterionFilter, setSelectedCriterionFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isBatchMapping, setIsBatchMapping] = useState(false);
+  const [batchNotice, setBatchNotice] = useState<string | null>(null);
 
   // Filter evidence
   const activeEvidences = evidenceList.filter(e => e.status === 'ACTIVE');
@@ -79,6 +91,21 @@ export const Portfolio: React.FC<PortfolioProps> = ({
 
     return matchSearch && matchType && matchCriterion;
   });
+
+  const handleRunBatchAutoMap = async () => {
+    if (!onBatchAutoMap) return;
+    setIsBatchMapping(true);
+    setBatchNotice(null);
+    try {
+      await onBatchAutoMap();
+      setBatchNotice('จัดผลงานทั้งหมดเข้าตัวชี้วัดที่เหมาะสมเรียบร้อยแล้ว');
+      setTimeout(() => setBatchNotice(null), 5000);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setIsBatchMapping(false);
+    }
+  };
 
   return (
     <motion.div 
@@ -102,8 +129,38 @@ export const Portfolio: React.FC<PortfolioProps> = ({
           <p className="text-xs text-[#86868b] mt-1">
             รวบรวม {activeEvidences.length} รายการผลงานที่บันทึกไว้ตลอดปีงบประมาณ {fiscalYear} พร้อมเอกสารหลักฐานและตัวชี้วัดที่เชื่อมโยง
           </p>
+          {batchNotice && (
+            <div className="mt-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl inline-flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              {batchNotice}
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Batch Auto Map button */}
+          {onBatchAutoMap && (
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleRunBatchAutoMap}
+              disabled={isBatchMapping}
+              className="px-4 py-2.5 bg-[#f0f4fa] hover:bg-[#e4edfa] text-[#0071e3] font-medium text-xs rounded-full border border-[#0071e3]/20 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              title="ให้ AI วิเคราะห์และจัดผลงานทั้งหมดเข้าตัวชี้วัดที่เหมาะสมอัตโนมัติ"
+            >
+              {isBatchMapping ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  กำลังจัดตัวชี้วัด...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 text-[#0071e3]" />
+                  จัดตัวชี้วัดอัตโนมัติ (AI Auto-Map)
+                </>
+              )}
+            </motion.button>
+          )}
+
           {/* Segmented control for Grid/List */}
           <div className="flex items-center bg-[#f0f0f2] p-1 rounded-xl">
             <button
@@ -226,8 +283,9 @@ export const Portfolio: React.FC<PortfolioProps> = ({
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
         >
           {filtered.map(item => {
-            const primaryMapping = item.criteria_mappings.find(m => m.relation_type === 'Primary');
+            const primaryMapping = item.criteria_mappings?.find(m => m.relation_type === 'Primary');
             const primaryCriterion = criteria.find(c => c.criterion_id === primaryMapping?.criterion_id);
+            const otherMappings = item.criteria_mappings?.filter(m => m.relation_type !== 'Primary') || [];
 
             return (
               <motion.div 
@@ -260,12 +318,33 @@ export const Portfolio: React.FC<PortfolioProps> = ({
                     {item.description || item.outcome || 'ไม่มีคำอธิบาย'}
                   </p>
 
-                  {/* Linked Primary Criterion */}
-                  {primaryCriterion && (
-                    <div className="p-2.5 rounded-2xl bg-[#fbfbfd] border border-black/[0.05] text-[11px] text-[#515154]">
-                      <span className="font-semibold text-[#1d1d1f]">ตัวชี้วัดหลัก:</span> [{primaryCriterion.criterion_code}] {primaryCriterion.criterion_name}
-                    </div>
-                  )}
+                  {/* Multi-Criteria Badges */}
+                  <div className="space-y-1.5 pt-1">
+                    {primaryCriterion && (
+                      <div className="p-2 rounded-xl bg-[#0071e3]/5 border border-[#0071e3]/15 text-[11px] text-[#1d1d1f] flex items-center gap-1.5">
+                        <span className="font-semibold text-[#0071e3]">★ หลัก:</span>
+                        <span className="font-medium truncate">[{primaryCriterion.criterion_code}] {primaryCriterion.criterion_name}</span>
+                      </div>
+                    )}
+                    
+                    {otherMappings.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-[10px] text-[#86868b] font-medium">ร่วมกับ:</span>
+                        {otherMappings.map(m => {
+                          const cObj = criteria.find(c => c.criterion_id === m.criterion_id);
+                          return (
+                            <span 
+                              key={m.criterion_id}
+                              title={cObj?.criterion_name || m.criterion_id}
+                              className="text-[10px] bg-black/[0.04] text-[#515154] px-2 py-0.5 rounded-md border border-black/[0.04]"
+                            >
+                              {cObj?.criterion_code || m.criterion_id}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Tags */}
                   {item.tags && item.tags.length > 0 && (
@@ -279,15 +358,29 @@ export const Portfolio: React.FC<PortfolioProps> = ({
                   )}
                 </div>
 
-                {/* Card footer */}
+                {/* Card footer & Edit button */}
                 <div className="pt-3.5 mt-3.5 border-t border-black/[0.04] flex items-center justify-between text-xs text-[#86868b]">
-                  <div className="flex items-center gap-1 text-[#515154]">
-                    <Paperclip className="w-3.5 h-3.5 text-[#0071e3]" />
-                    <span>{item.files?.length || 0} ไฟล์</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 text-[#515154]">
+                      <Paperclip className="w-3.5 h-3.5 text-[#0071e3]" />
+                      <span>{item.files?.length || 0} ไฟล์</span>
+                    </div>
+                    <span className="font-medium text-[#1d1d1f] bg-black/[0.04] px-2 py-0.5 rounded-md text-[11px]">
+                      {item.activity_type}
+                    </span>
                   </div>
-                  <span className="font-medium text-[#1d1d1f] bg-black/[0.04] px-2 py-0.5 rounded-md">
-                    {item.activity_type}
-                  </span>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditEvidence(item);
+                    }}
+                    className="px-2.5 py-1 bg-black/[0.04] hover:bg-[#0071e3] hover:text-white text-[#1d1d1f] font-medium text-[11px] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    แก้ไข / เพิ่มหลักฐาน
+                  </button>
                 </div>
               </motion.div>
             );
@@ -301,13 +394,13 @@ export const Portfolio: React.FC<PortfolioProps> = ({
         >
           {filtered.map(item => (
             <motion.div 
-              key={item.evidence_id}
+              key={item.evidence_id} 
               whileHover={{ backgroundColor: 'rgba(0,0,0,0.015)' }}
               className="p-4.5 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer"
               onClick={() => onSelectEvidence(item)}
             >
               <div className="space-y-1 min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[11px] font-semibold text-[#515154] bg-black/[0.04] px-2 py-0.5 rounded-md">
                     {item.evidence_id}
                   </span>
@@ -317,6 +410,25 @@ export const Portfolio: React.FC<PortfolioProps> = ({
                   <span className="text-xs text-[#1d1d1f] font-medium px-2 py-0.5 bg-black/[0.04] rounded-md">
                     {item.activity_type}
                   </span>
+                  {/* Multi-criteria pills in list */}
+                  {item.criteria_mappings && item.criteria_mappings.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      {item.criteria_mappings.map(m => {
+                        const isPri = m.relation_type === 'Primary';
+                        const cObj = criteria.find(c => c.criterion_id === m.criterion_id);
+                        return (
+                          <span
+                            key={m.criterion_id}
+                            className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${
+                              isPri ? 'bg-[#0071e3]/10 text-[#0071e3]' : 'bg-black/[0.04] text-[#86868b]'
+                            }`}
+                          >
+                            {cObj?.criterion_code || m.criterion_id}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <h3 className="text-sm font-semibold text-[#1d1d1f] truncate">
                   {item.title}
@@ -330,6 +442,19 @@ export const Portfolio: React.FC<PortfolioProps> = ({
                 <span className="inline-flex items-center gap-1 text-[#515154]">
                   <Paperclip className="w-3.5 h-3.5 text-[#0071e3]" /> {item.files?.length || 0}
                 </span>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditEvidence(item);
+                  }}
+                  className="px-2.5 py-1.5 bg-[#f0f0f2] hover:bg-[#0071e3] hover:text-white text-[#1d1d1f] font-medium text-xs rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  แก้ไข
+                </button>
+
                 <span className="text-[#0071e3] font-medium hover:underline">
                   ดูรายละเอียด →
                 </span>

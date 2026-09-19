@@ -90,7 +90,7 @@ ${criteriaListStr}
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -198,7 +198,7 @@ ${i + 1}. [${e.evidence_id}] ${e.title} (${e.start_date})
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -261,7 +261,7 @@ ${evidenceList?.map((e: any) => `- [${e.evidence_id}] ${e.title} -> ตัวช
 `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -308,6 +308,195 @@ ${evidenceList?.map((e: any) => `- [${e.evidence_id}] ${e.title} -> ตัวช
   } catch (error: any) {
     console.error("AI Gap Analysis error:", error);
     res.status(500).json({ error: error.message || "เกิดข้อผิดพลาดในการวิเคราะห์ Gap" });
+  }
+});
+
+// AI Auto-Expand Description by Academic Standing (ขยายความคำอธิบายตามระดับวิทยฐานะ)
+app.post("/api/ai/expand-description", async (req, res) => {
+  try {
+    const { 
+      title, 
+      description, 
+      activityType, 
+      academicStanding, 
+      position, 
+      subject, 
+      gradeLevel,
+      existingProcess,
+      existingOutput,
+      existingOutcome
+    } = req.body;
+
+    const standing = academicStanding || "ชำนาญการพิเศษ";
+    
+    // Determine expected pedagogical verb level according to ว.PA (ก.ค.ศ.)
+    let verbStandard = "ริเริ่ม พัฒนา";
+    let verbExplanation = "ริเริ่ม พัฒนา นวัตกรรมและการจัดการเรียนรู้ Active Learning และแก้ปัญหาผู้เรียน";
+    if (standing.includes("เชี่ยวชาญพิเศษ")) {
+      verbStandard = "สร้างการเปลี่ยนแปลง";
+      verbExplanation = "สร้างการเปลี่ยนแปลง พัฒนานวัตกรรมต้นแบบระดับชาติหรือระดับองค์กร เผยแพร่ขยายผล";
+    } else if (standing.includes("เชี่ยวชาญ")) {
+      verbStandard = "คิดค้น ปรับเปลี่ยน";
+      verbExplanation = "คิดค้น ปรับเปลี่ยน รูปแบบการจัดการเรียนรู้ให้สอดคล้องกับบริบทและเป็นแบบอย่าง";
+    } else if (standing.includes("ชำนาญการพิเศษ")) {
+      verbStandard = "ริเริ่ม พัฒนา";
+      verbExplanation = "ริเริ่ม พัฒนา นวัตกรรมการจัดการเรียนรู้ Active Learning และแก้ปัญหาผู้เรียน";
+    } else if (standing.includes("ชำนาญการ")) {
+      verbStandard = "แก้ไขปัญหา";
+      verbExplanation = "แก้ไขปัญหาการจัดการเรียนรู้และการพัฒนาคุณภาพผู้เรียน";
+    } else {
+      verbStandard = "ปรับประยุกต์";
+      verbExplanation = "ปรับประยุกต์หลักสูตรและแผนการจัดการเรียนรู้ให้เหมาะสมกับผู้เรียนและบริบท";
+    }
+
+    const ai = getGeminiClient();
+
+    const prompt = `
+คุณคือผู้เชี่ยวชาญการประเมินวิทยฐานะข้าราชการครู (ว.PA) ตามเกณฑ์ ก.ค.ศ. ว9/2564
+หน้าที่ของคุณคือ: "ขยายความและเรียบเรียงคำอธิบายผลงาน/กิจกรรมของครูให้ละเอียด ชัดเจน เป็นมืออาชีพ ถูกต้องตามระเบียบราชการ และตรงตามระดับความคาดหวังของวิทยฐานะของครูอย่างแม่นยำ"
+
+ข้อมูลครูและวิทยฐานะ:
+- ตำแหน่ง: ${position || "ครู"}
+- ระดับวิทยฐานะ: ${standing}
+- ระดับการปฏิบัติที่คาดหวังตามเกณฑ์ ก.ค.ศ.: "${verbStandard}" (${verbExplanation})
+- กลุ่มสาระ/วิชา: ${subject || "ทั่วไป"}
+- ระดับชั้น: ${gradeLevel || "ทั่วไป"}
+
+ข้อมูลผลงานที่ครูระบุเบื้องต้น:
+- ชื่อผลงาน/กิจกรรม: ${title || "-"}
+- ประเภทกิจกรรม: ${activityType || "การจัดการเรียนรู้"}
+- คำอธิบายเดิม: ${description || "-"}
+- สิ่งที่ดำเนินการเดิม: ${existingProcess || "-"}
+- ผลผลิตเดิม: ${existingOutput || "-"}
+- ผลลัพธ์เดิม: ${existingOutcome || "-"}
+
+แนวทางการขยายความ:
+1. ต้องสอดแทรกคำกริยาระดับมาตรฐานวิทยฐานะ "${verbStandard}" ในคำอธิบายและกระบวนการอย่างเป็นธรรมชาติและสอดคล้องกับเนื้อหางานจริง
+2. ขยายความคำอธิบาย (expandedDescription) ให้เห็นบริบท วัตถุประสงค์ กระบวนการจัดกิจกรรม Active Learning หรือการแก้ปัญหาผู้เรียน และผลสัมฤทธิ์
+3. กระบวนการ (process): อธิบายเป็นขั้นตอนชัดเจนตามวงจร PDCA (วางแผน ดำเนินการ ตรวจสอบ ประเมินผลและปรับปรุง)
+4. ผลผลิต (output): ระบุชิ้นงาน นวัตกรรม แผน หรือเอกสารที่จับต้องได้
+5. ผลลัพธ์ (outcome): การเปลี่ยนแปลงเชิงพฤติกรรม ทักษะ หรือสมรรถนะของผู้เรียน
+6. ข้อมูลเชิงปริมาณ (quantitativeResult): ตัวชี้วัดที่วัดได้เป็นตัวเลขหรือร้อยละ เช่น ร้อยละของผู้เรียนที่ผ่านเกณฑ์
+7. ข้อมูลเชิงคุณภาพ (qualitativeResult): คุณภาพความพึงพอใจและพัฒนาการ
+8. แนะนำรหัสตัวชี้วัด PA ที่ตรงกับงานนี้อย่างน้อย 1-3 ตัวชี้วัด (เช่น "PA-1.1", "PA-1.2", "PA-1.3", "PA-2.1")
+`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            expandedDescription: { type: Type.STRING },
+            pedagogicalLevelVerb: { type: Type.STRING },
+            process: { type: Type.STRING },
+            output: { type: Type.STRING },
+            outcome: { type: Type.STRING },
+            quantitativeResult: { type: Type.STRING },
+            qualitativeResult: { type: Type.STRING },
+            suggestedCriteriaIds: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            }
+          },
+          required: [
+            "expandedDescription",
+            "pedagogicalLevelVerb",
+            "process",
+            "output",
+            "outcome",
+            "quantitativeResult",
+            "qualitativeResult",
+            "suggestedCriteriaIds"
+          ]
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: JSON.parse(response.text || "{}")
+    });
+  } catch (error: any) {
+    console.error("AI Expand Description error:", error);
+    res.status(500).json({ error: error.message || "เกิดข้อผิดพลาดในการขยายความคำอธิบายด้วย AI" });
+  }
+});
+
+// AI Auto-map evidence to multiple criteria (จัดผลงานเข้าตัวชี้วัดที่เหมาะสมมากกว่า 1 ตัวชี้วัด)
+app.post("/api/ai/auto-map-criteria", async (req, res) => {
+  try {
+    const { evidence, activeCriteria, profile } = req.body;
+    const ai = getGeminiClient();
+
+    const criteriaListStr = activeCriteria && activeCriteria.length > 0
+      ? JSON.stringify(activeCriteria.map((c: any) => ({
+          id: c.criterion_id,
+          code: c.criterion_code,
+          name: c.criterion_name,
+          aspect: c.aspect
+        })))
+      : "เกณฑ์มาตรฐาน ว.PA 15 ตัวชี้วัด";
+
+    const prompt = `
+คุณคือผู้เชี่ยวชาญการประเมิน ว.PA ก.ค.ศ.
+ทำการจัดผลงานชิ้นนี้เข้าไปยังตัวชี้วัด PA ที่เหมาะสม โดยสามารถจัดไว้ได้มากกว่า 1 ตัวชี้วัด (Multi-criteria mapping) ตามความสอดคล้องของเนื้อหา
+
+ข้อมูลครู: ${profile?.name || "ครู"} วิทยฐานะ: ${profile?.academicStanding || "ชำนาญการพิเศษ"}
+ข้อมูลผลงาน:
+- ชื่อผลงาน: ${evidence.title}
+- ประเภท: ${evidence.activity_type}
+- คำอธิบาย: ${evidence.description || "-"}
+- กระบวนการ: ${evidence.process || "-"}
+- ผลผลิต/ผลลัพธ์: ${evidence.output || "-"} / ${evidence.outcome || "-"}
+
+รายการตัวชี้วัดทั้งหมด:
+${criteriaListStr}
+
+ข้อกำหนด:
+1. เลือกตัวชี้วัดหลัก (Primary) ที่ตรงที่สุด 1 ตัวชี้วัด
+2. เลือกตัวชี้วัดรอง/สนับสนุน (Supporting) ที่มีเนื้อหาสอดคล้องเกี่ยวข้องอีก 1-3 ตัวชี้วัด (รวมแล้วมากกว่า 1 ตัวชี้วัดได้)
+3. ระบุเหตุผล (reason) และค่าความมั่นใจ (confidence 0-100)
+`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.8-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            primaryCriterionId: { type: Type.STRING },
+            primaryReason: { type: Type.STRING },
+            matchedCriteria: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  criterion_id: { type: Type.STRING },
+                  relation_type: { type: Type.STRING, description: "Primary | Supporting" },
+                  confidence: { type: Type.NUMBER },
+                  reason: { type: Type.STRING }
+                },
+                required: ["criterion_id", "relation_type", "confidence", "reason"]
+              }
+            }
+          },
+          required: ["primaryCriterionId", "primaryReason", "matchedCriteria"]
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: JSON.parse(response.text || "{}")
+    });
+  } catch (error: any) {
+    console.error("AI Auto-map criteria error:", error);
+    res.status(500).json({ error: error.message || "เกิดข้อผิดพลาดในการจัดตัวชี้วัดอัตโนมัติ" });
   }
 });
 
