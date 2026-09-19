@@ -1,95 +1,115 @@
 /**
- * Google Workspace Service (Drive + Sheets) using client-side OAuth
+ * Google Workspace Service (Drive + Sheets) using Firebase Auth OAuth Provider
  * Provides seamless persistence directly to user's Google Drive and Google Sheets.
  */
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { 
+  getAuth, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  onAuthStateChanged, 
+  User, 
+  signOut 
+} from 'firebase/auth';
+import firebaseConfig from '../../firebase-applet-config.json';
 
-declare global {
-  interface Window {
-    google?: any;
+// Initialize Firebase App
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const auth = getAuth(app);
+
+// Configure Google Auth Provider with Drive & Sheets scopes
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
+googleProvider.addScope('https://www.googleapis.com/auth/spreadsheets');
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
+});
+
+// Cache the access token in memory (mandated: do not store in persistent storage)
+let cachedAccessToken: string | null = null;
+let isSigningIn = false;
+
+/**
+ * Initialize auth listener to monitor sign-in state
+ */
+export const initAuth = (
+  onAuthSuccess?: (user: User, token: string) => void,
+  onAuthFailure?: () => void
+) => {
+  return onAuthStateChanged(auth, async (user: User | null) => {
+    if (user) {
+      if (cachedAccessToken) {
+        if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
+      } else if (!isSigningIn) {
+        if (onAuthFailure) onAuthFailure();
+      }
+    } else {
+      cachedAccessToken = null;
+      if (onAuthFailure) onAuthFailure();
+    }
+  });
+};
+
+/**
+ * Perform Google Sign-in with Drive & Sheets scopes
+ */
+export const googleSignIn = async (): Promise<{ user: User; accessToken: string }> => {
+  try {
+    isSigningIn = true;
+    const result = await signInWithPopup(auth, googleProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    if (!credential?.accessToken) {
+      throw new Error('ไม่สามารถดึง Access Token จาก Google ได้');
+    }
+
+    cachedAccessToken = credential.accessToken;
+    return { user: result.user, accessToken: cachedAccessToken };
+  } catch (error: any) {
+    console.error('Google Sign in error:', error);
+    throw error;
+  } finally {
+    isSigningIn = false;
   }
-}
+};
 
-const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets';
+/**
+ * Request Access Token (uses cached token or opens sign-in popup)
+ */
+export async function requestGoogleAccessToken(promptUser = true): Promise<string> {
+  if (cachedAccessToken) {
+    return cachedAccessToken;
+  }
 
-// Token state cache
-let currentAccessToken: string | null = null;
-let tokenExpiresAt: number = 0;
+  // If user prompt is permitted, trigger Google popup
+  if (promptUser) {
+    const res = await googleSignIn();
+    return res.accessToken;
+  }
 
-export interface TokenResponse {
-  access_token: string;
-  expires_in: number;
+  throw new Error('ยังไม่ได้เข้าสู่ระบบ Google หรือ Token หมดอายุ');
 }
 
 export function getStoredToken(): string | null {
-  if (currentAccessToken && Date.now() < tokenExpiresAt) {
-    return currentAccessToken;
-  }
-  const localTok = localStorage.getItem('mypa_google_token');
-  const exp = localStorage.getItem('mypa_google_token_exp');
-  if (localTok && exp && Date.now() < parseInt(exp, 10)) {
-    currentAccessToken = localTok;
-    tokenExpiresAt = parseInt(exp, 10);
-    return currentAccessToken;
-  }
-  return null;
+  return cachedAccessToken;
 }
 
-export function setStoredToken(token: string, expiresInSeconds: number) {
-  currentAccessToken = token;
-  tokenExpiresAt = Date.now() + (expiresInSeconds - 60) * 1000;
-  localStorage.setItem('mypa_google_token', token);
-  localStorage.setItem('mypa_google_token_exp', tokenExpiresAt.toString());
-}
-
-export function clearStoredToken() {
-  currentAccessToken = null;
-  tokenExpiresAt = 0;
-  localStorage.removeItem('mypa_google_token');
-  localStorage.removeItem('mypa_google_token_exp');
-}
-
-/**
- * Request Access Token using Google Identity Services (GSI)
- */
-export async function requestGoogleAccessToken(promptUser = true): Promise<string> {
-  const existing = getStoredToken();
-  if (existing) return existing;
-
-  return new Promise((resolve, reject) => {
-    if (!window.google?.accounts?.oauth2) {
-      reject(new Error('Google Identity Services library is not loaded. โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ต'));
-      return;
-    }
-
-    try {
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: '762500168772-000000000000.apps.googleusercontent.com', // Configured via project
-        scope: SCOPES,
-        callback: (response: any) => {
-          if (response.error) {
-            reject(new Error(response.error_description || response.error));
-            return;
-          }
-          setStoredToken(response.access_token, response.expires_in || 3599);
-          resolve(response.access_token);
-        },
-      });
-
-      client.requestAccessToken({ prompt: promptUser ? '' : 'none' });
-    } catch (err: any) {
-      reject(err);
-    }
-  });
+export async function clearStoredToken() {
+  cachedAccessToken = null;
+  await signOut(auth);
 }
 
 // ---------------- Google Drive API Helpers ---------------- //
 
 /**
- * Create or find root folder "My_PA_Portfolio" in user's Drive
+ * Create or find folder in user's Drive
  */
-export async function getOrCreateDriveFolder(folderName: string, parentFolderId?: string, accessToken?: string): Promise<{ id: string; name: string }> {
-  const token = accessToken || getStoredToken();
-  if (!token) throw new Error('ไม่พบ Google Access Token');
+export async function getOrCreateDriveFolder(
+  folderName: string, 
+  parentFolderId?: string, 
+  accessToken?: string
+): Promise<{ id: string; name: string }> {
+  const token = accessToken || cachedAccessToken;
+  if (!token) throw new Error('ไม่พบ Google Access Token โปรดเข้าสู่ระบบใหม่');
 
   // Search for existing folder
   const query = parentFolderId
@@ -104,7 +124,8 @@ export async function getOrCreateDriveFolder(folderName: string, parentFolderId?
   );
 
   if (!searchRes.ok) {
-    throw new Error(`ค้นหา Folder ไม่สำเร็จ: ${searchRes.statusText}`);
+    const err = await searchRes.text();
+    throw new Error(`ค้นหา Folder ไม่สำเร็จ (${searchRes.status}): ${err}`);
   }
 
   const searchData = await searchRes.json();
@@ -131,7 +152,8 @@ export async function getOrCreateDriveFolder(folderName: string, parentFolderId?
   });
 
   if (!createRes.ok) {
-    throw new Error(`สร้าง Drive Folder ไม่สำเร็จ: ${createRes.statusText}`);
+    const err = await createRes.text();
+    throw new Error(`สร้าง Drive Folder ไม่สำเร็จ: ${err}`);
   }
 
   return await createRes.json();
@@ -140,8 +162,12 @@ export async function getOrCreateDriveFolder(folderName: string, parentFolderId?
 /**
  * Upload file to Google Drive using multipart upload
  */
-export async function uploadFileToDrive(file: File, folderId?: string, accessToken?: string): Promise<{ id: string; name: string; webViewLink?: string; size: number }> {
-  const token = accessToken || getStoredToken();
+export async function uploadFileToDrive(
+  file: File, 
+  folderId?: string, 
+  accessToken?: string
+): Promise<{ id: string; name: string; webViewLink?: string; size: number }> {
+  const token = accessToken || cachedAccessToken;
   if (!token) throw new Error('ไม่พบ Google Access Token');
 
   const metadata: any = {
@@ -153,7 +179,6 @@ export async function uploadFileToDrive(file: File, folderId?: string, accessTok
   }
 
   const boundary = '-------314159265358979323846';
-  const delimiter = `\r\n--${boundary}\r\n`;
   const closeDelim = `\r\n--${boundary}--`;
 
   const reader = new FileReader();
@@ -163,28 +188,11 @@ export async function uploadFileToDrive(file: File, folderId?: string, accessTok
     reader.readAsArrayBuffer(file);
   });
 
-  const metadataBlob = new Blob([
-    delimiter,
-    'Content-Type: application/json; charset=UTF-8\r\n\r\n',
-    JSON.stringify(metadata),
-    delimiter,
-    `Content-Type: ${file.type || 'application/octet-stream'}\r\n`,
-    'Content-Transfer-Encoding: base64\r\n\r\n'
-  ]);
-
-  // Convert buffer to base64
-  let binary = '';
-  const bytes = new Uint8Array(fileArrayBuffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  const base64Data = btoa(binary);
-
   const multipartBody = new Blob([
-    delimiter,
+    `--${boundary}\r\n`,
     'Content-Type: application/json; charset=UTF-8\r\n\r\n',
     JSON.stringify(metadata),
-    delimiter,
+    `\r\n--${boundary}\r\n`,
     `Content-Type: ${file.type || 'application/octet-stream'}\r\n\r\n`,
     fileArrayBuffer,
     closeDelim
@@ -215,8 +223,12 @@ export async function uploadFileToDrive(file: File, folderId?: string, accessTok
 /**
  * Create master spreadsheet with all required schema sheets
  */
-export async function createMasterSpreadsheet(title: string = 'MyPA_Portfolio_DB', folderId?: string, accessToken?: string): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
-  const token = accessToken || getStoredToken();
+export async function createMasterSpreadsheet(
+  title: string = 'MyPA_Portfolio_DB', 
+  folderId?: string, 
+  accessToken?: string
+): Promise<{ spreadsheetId: string; spreadsheetUrl: string }> {
+  const token = accessToken || cachedAccessToken;
   if (!token) throw new Error('ไม่พบ Google Access Token');
 
   const sheetsToCreate = [
@@ -337,7 +349,7 @@ async function initializeSpreadsheetHeaders(spreadsheetId: string, token: string
  * Append Evidence row to Google Sheets
  */
 export async function appendEvidenceToSheet(spreadsheetId: string, evidence: any, accessToken?: string) {
-  const token = accessToken || getStoredToken();
+  const token = accessToken || cachedAccessToken;
   if (!token || !spreadsheetId) return;
 
   const row = [

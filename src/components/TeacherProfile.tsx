@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { UserProfile, EducationRecord, LicenseRecord, DecorationRecord } from '../types';
 import { 
   User, 
@@ -20,8 +20,68 @@ import {
   BookOpen, 
   Layers,
   Clock,
-  FileCheck
+  FileCheck,
+  UploadCloud,
+  Link as LinkIcon,
+  X,
+  Loader2,
+  Image as ImageIcon,
+  AlertCircle,
+  Check
 } from 'lucide-react';
+
+/**
+ * Compress an image file using client-side HTML5 Canvas.
+ * Reduces huge camera/phone photos (5MB-15MB) to a high-DPI compact image (~25KB-45KB)
+ * that fits safely within localStorage quota and renders instantly.
+ */
+const compressImageFile = (file: File, maxDim = 400, quality = 0.85): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      reject(new Error('ไฟล์ที่เลือกไม่ใช่รูปภาพ กรุณาเลือกไฟล์ภาพ เช่น JPG, PNG, WEBP'));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์ได้'));
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onerror = () => reject(new Error('ไม่สามารถโหลดภาพเพื่อประมวลผลได้'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+};
 
 interface TeacherProfileProps {
   profile: UserProfile;
@@ -40,6 +100,16 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
   const [newSubject, setNewSubject] = useState('');
   const [newAssignment, setNewAssignment] = useState('');
   const [avatarPreview, setAvatarPreview] = useState<string | undefined>(profile.avatarUrl);
+
+  // Avatar modal & processing state
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [avatarModalTab, setAvatarModalTab] = useState<'upload' | 'url'>('upload');
+  const [tempAvatarPreview, setTempAvatarPreview] = useState<string | undefined>(profile.avatarUrl);
+  const [avatarUrlInput, setAvatarUrlInput] = useState('');
+  const [isProcessingAvatar, setIsProcessingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarToast, setAvatarToast] = useState<string | null>(null);
+  const directFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFieldChange = (field: keyof UserProfile, value: any) => {
     setFormData(prev => ({
@@ -61,17 +131,81 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
     setTimeout(() => setSaveToast(false), 3500);
   };
 
-  // Avatar change handler
-  const handleAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Process and save avatar immediately
+  const saveAvatarToProfile = (newAvatarUrl: string | undefined) => {
+    setAvatarPreview(newAvatarUrl);
+    setFormData(prev => ({ ...prev, avatarUrl: newAvatarUrl }));
+    
+    // Auto-save to profile immediately so the user never loses it
+    const fullName = `${formData.prefix || ''}${formData.firstName} ${formData.lastName}`.trim();
+    const updated: UserProfile = {
+      ...formData,
+      name: fullName || formData.name,
+      avatarUrl: newAvatarUrl
+    };
+    onUpdateProfile(updated);
+
+    setAvatarToast(newAvatarUrl ? 'บันทึกรูปโปรไฟล์เรียบร้อยแล้ว' : 'รีเซ็ตรูปโปรไฟล์เป็นค่าเริ่มต้นแล้ว');
+    setTimeout(() => setAvatarToast(null), 4000);
+  };
+
+  // Direct file input on camera icon
+  const handleDirectAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-        setFormData(prev => ({ ...prev, avatarUrl: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    try {
+      setIsProcessingAvatar(true);
+      setAvatarError(null);
+      const compressed = await compressImageFile(file);
+      saveAvatarToProfile(compressed);
+      setTempAvatarPreview(compressed);
+    } catch (err: any) {
+      console.error('Avatar upload error:', err);
+      setAvatarError(err.message || 'เกิดข้อผิดพลาดในการโหลดรูปภาพ');
+      setIsAvatarModalOpen(true);
+    } finally {
+      setIsProcessingAvatar(false);
+      // Reset input value so same file can be selected again
+      e.target.value = '';
     }
+  };
+
+  // Modal file selection
+  const handleModalFileSelect = async (file: File) => {
+    try {
+      setIsProcessingAvatar(true);
+      setAvatarError(null);
+      const compressed = await compressImageFile(file);
+      setTempAvatarPreview(compressed);
+    } catch (err: any) {
+      setAvatarError(err.message || 'เกิดข้อผิดพลาดในการโหลดรูปภาพ');
+    } finally {
+      setIsProcessingAvatar(false);
+    }
+  };
+
+  // Modal apply URL
+  const handleApplyUrl = () => {
+    if (!avatarUrlInput.trim()) {
+      setAvatarError('กรุณาระบุ URL ของรูปภาพ');
+      return;
+    }
+    setAvatarError(null);
+    setTempAvatarPreview(avatarUrlInput.trim());
+  };
+
+  // Modal confirm save
+  const handleConfirmSaveModal = () => {
+    saveAvatarToProfile(tempAvatarPreview);
+    setIsAvatarModalOpen(false);
+  };
+
+  // Modal remove avatar
+  const handleRemoveAvatar = () => {
+    setTempAvatarPreview(undefined);
+    saveAvatarToProfile(undefined);
+    setIsAvatarModalOpen(false);
   };
 
   // Education Records
@@ -174,7 +308,7 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Toast Notification */}
+      {/* Toast Notification for Profile Save */}
       {saveToast && (
         <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 bg-purple-900 text-white rounded-2xl shadow-xl border border-amber-400/40 animate-fade-in">
           <div className="w-8 h-8 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center">
@@ -183,6 +317,19 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
           <div>
             <div className="text-sm font-bold text-white">บันทึกข้อมูลส่วนตัวสำเร็จ</div>
             <div className="text-xs text-amber-200">อัปเดตข้อมูลทะเบียนและระบบ PA เรียบร้อยแล้ว</div>
+          </div>
+        </div>
+      )}
+
+      {/* Avatar Specific Toast Notification */}
+      {avatarToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 bg-emerald-950 text-white rounded-2xl shadow-2xl border border-emerald-400/60 animate-fade-in">
+          <div className="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-sm font-bold text-white">{avatarToast}</div>
+            <div className="text-xs text-emerald-300/90">บันทึกรูปภาพและจัดเก็บลงโปรไฟล์เรียบร้อยแล้ว</div>
           </div>
         </div>
       )}
@@ -197,7 +344,15 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             {/* Avatar with photo and file upload */}
             <div className="relative group">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-amber-400/80 bg-purple-900/60 shadow-lg flex items-center justify-center">
+              <div 
+                onClick={() => {
+                  setTempAvatarPreview(avatarPreview);
+                  setAvatarError(null);
+                  setIsAvatarModalOpen(true);
+                }}
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-amber-400/80 bg-purple-900/60 shadow-lg flex items-center justify-center cursor-pointer relative transition-transform hover:scale-[1.02]"
+                title="คลิกเพื่อเปลี่ยนหรือจัดการรูปโปรไฟล์"
+              >
                 {avatarPreview ? (
                   <img 
                     src={avatarPreview} 
@@ -206,23 +361,39 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <User className="w-12 h-12 text-amber-300" />
+                  <div className="flex flex-col items-center justify-center text-amber-300">
+                    <User className="w-12 h-12" />
+                    <span className="text-[10px] font-bold text-purple-200 mt-1">ยังไม่มีรูป</span>
+                  </div>
+                )}
+
+                {/* Processing Overlay */}
+                {isProcessingAvatar ? (
+                  <div className="absolute inset-0 bg-purple-950/85 flex flex-col items-center justify-center text-white text-[10px] font-semibold gap-1.5 p-1 text-center">
+                    <Loader2 className="w-5 h-5 animate-spin text-amber-400" />
+                    <span>กำลังย่อขนาด...</span>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 bg-purple-950/65 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[11px] font-semibold gap-1">
+                    <Camera className="w-5 h-5 text-amber-400" />
+                    <span>เปลี่ยนรูป</span>
+                  </div>
                 )}
               </div>
-              <label 
-                htmlFor="avatar-upload"
-                className="absolute bottom-1 right-1 p-2 rounded-xl bg-amber-500 text-slate-950 hover:bg-amber-400 shadow-md cursor-pointer transition-transform group-hover:scale-110"
-                title="เปลี่ยนรูปภาพประจำตัว"
+
+              {/* Direct Camera Button - opens modal */}
+              <button 
+                type="button"
+                onClick={() => {
+                  setTempAvatarPreview(avatarPreview);
+                  setAvatarError(null);
+                  setIsAvatarModalOpen(true);
+                }}
+                className="absolute bottom-1 right-1 p-2 rounded-xl bg-amber-500 text-slate-950 hover:bg-amber-400 shadow-md cursor-pointer transition-transform group-hover:scale-110 flex items-center justify-center"
+                title="คลิกเพื่อจัดการรูปโปรไฟล์"
               >
                 <Camera className="w-4 h-4" />
-                <input 
-                  type="file" 
-                  id="avatar-upload" 
-                  accept="image/*" 
-                  className="hidden" 
-                  onChange={handleAvatarFile}
-                />
-              </label>
+              </button>
             </div>
 
             {/* Teacher Titles & Quick Identifiers */}
@@ -978,6 +1149,243 @@ export const TeacherProfile: React.FC<TeacherProfileProps> = ({
               <Save className="w-4 h-4 text-amber-400" />
               บันทึกข้อมูลใบอนุญาต
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Picture Management Modal */}
+      {isAvatarModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-purple-100 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4.5 bg-gradient-to-r from-purple-950 via-purple-900 to-indigo-950 text-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center">
+                  <Camera className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">จัดการรูปถ่ายประจำตัวครู</h3>
+                  <p className="text-[11px] text-purple-200">อัปโหลดหรือเปลี่ยนรูปโปรไฟล์สำหรับระบบ PA</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAvatarModalOpen(false)}
+                className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5 overflow-y-auto">
+              {/* Preview comparison section */}
+              <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100/80 flex items-center gap-5">
+                <div className="relative">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-amber-400 bg-purple-900/40 shadow-md flex items-center justify-center shrink-0">
+                    {tempAvatarPreview ? (
+                      <img
+                        src={tempAvatarPreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-purple-300" />
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <div className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                    <span>ตัวอย่างการแสดงผล</span>
+                    {tempAvatarPreview && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
+                        พร้อมใช้งาน
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    รูปภาพจะแสดงในหน้าข้อมูลส่วนตัว แดชบอร์ด และเอกสารรายงาน วPA
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[10px] text-slate-400">มุมมองย่อ:</span>
+                    <div className="w-7 h-7 rounded-full overflow-hidden border border-amber-400 bg-purple-900 flex items-center justify-center shrink-0">
+                      {tempAvatarPreview ? (
+                        <img
+                          src={tempAvatarPreview}
+                          alt="Mini"
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <User className="w-3.5 h-3.5 text-amber-300" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {avatarError && (
+                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{avatarError}</span>
+                </div>
+              )}
+
+              {/* Input Method Tabs */}
+              <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setAvatarModalTab('upload')}
+                  className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    avatarModalTab === 'upload'
+                      ? 'bg-white text-purple-900 shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>อัปโหลดจากอุปกรณ์</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAvatarModalTab('url')}
+                  className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    avatarModalTab === 'url'
+                      ? 'bg-white text-purple-900 shadow-xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <LinkIcon className="w-3.5 h-3.5" />
+                  <span>ระบุ URL รูปภาพ</span>
+                </button>
+              </div>
+
+              {/* Tab 1: Upload File */}
+              {avatarModalTab === 'upload' && (
+                <div className="space-y-3">
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) handleModalFileSelect(file);
+                    }}
+                    className="border-2 border-dashed border-purple-200 hover:border-purple-400 rounded-2xl p-6 text-center bg-purple-50/30 hover:bg-purple-50/60 transition-colors flex flex-col items-center justify-center gap-2"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center mb-1">
+                      {isProcessingAvatar ? (
+                        <Loader2 className="w-6 h-6 animate-spin text-purple-700" />
+                      ) : (
+                        <UploadCloud className="w-6 h-6 text-purple-700" />
+                      )}
+                    </div>
+                    <div className="text-xs font-bold text-purple-950">
+                      ลากรูปภาพมาวางที่นี่ หรือคลิกปุ่มเลือกไฟล์
+                    </div>
+                    <p className="text-[11px] text-slate-500 max-w-xs">
+                      รองรับไฟล์ JPG, PNG, WEBP จากโทรศัพท์มือถือหรือคอมพิวเตอร์
+                    </p>
+
+                    <label className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-purple-900 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition-all">
+                      <ImageIcon className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{isProcessingAvatar ? 'กำลังประมวลผลภาพ...' : 'เลือกรูปภาพจากเครื่อง'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isProcessingAvatar}
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleModalFileSelect(file);
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-900 flex items-start gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <span>
+                      <strong>ระบบบีบอัดภาพอัตโนมัติ:</strong> ปรับขนาดให้คมชัดพอดี (400×400 px) ขนาดไฟล์เล็กเพียง ~30KB ช่วยให้บันทึกผ่านได้ 100% โดยไม่ติดปัญหาความจุ
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 2: URL Input */}
+              {avatarModalTab === 'url' && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      URL ของรูปภาพ (Direct Link)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={avatarUrlInput}
+                        onChange={(e) => setAvatarUrlInput(e.target.value)}
+                        placeholder="https://example.com/my-photo.jpg"
+                        className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-purple-600 text-xs outline-hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyUrl}
+                        className="px-4 py-2.5 rounded-xl bg-purple-900 hover:bg-purple-800 text-white text-xs font-bold shrink-0 cursor-pointer"
+                      >
+                        ลองโหลดภาพ
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    ใส่ลิงก์รูปภาพที่เปิดดูสาธารณะได้ เช่น จากเว็บไซต์โรงเรียน หรือ Google Photos / Drive
+                  </p>
+                </div>
+              )}
+
+              {/* Revert / Remove Action */}
+              {tempAvatarPreview && (
+                <div className="pt-2 flex justify-start">
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 font-medium py-1 px-2 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>ลบรูปภาพนี้ และกลับไปใช้รูปเริ่มต้น</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsAvatarModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSaveModal}
+                disabled={isProcessingAvatar}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isProcessingAvatar ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    <span>กำลังประมวลผล...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 text-slate-950" />
+                    <span>บันทึกรูปโปรไฟล์ทันที</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

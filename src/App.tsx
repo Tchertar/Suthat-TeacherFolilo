@@ -84,25 +84,45 @@ export default function App() {
   const [selectedEvidenceForDetail, setSelectedEvidenceForDetail] = useState<EvidenceItem | null>(null);
   const [selectedCriterionId, setSelectedCriterionId] = useState<string>('');
 
-  // Persist states
+  // Persist states safely
   useEffect(() => {
-    localStorage.setItem('mypa_profile', JSON.stringify(profile));
+    try {
+      localStorage.setItem('mypa_profile', JSON.stringify(profile));
+    } catch (e) {
+      console.warn('Failed to save profile to localStorage:', e);
+    }
   }, [profile]);
 
   useEffect(() => {
-    localStorage.setItem('mypa_plan', JSON.stringify(paPlan));
+    try {
+      localStorage.setItem('mypa_plan', JSON.stringify(paPlan));
+    } catch (e) {
+      console.warn('Failed to save paPlan to localStorage:', e);
+    }
   }, [paPlan]);
 
   useEffect(() => {
-    localStorage.setItem('mypa_criteria', JSON.stringify(criteria));
+    try {
+      localStorage.setItem('mypa_criteria', JSON.stringify(criteria));
+    } catch (e) {
+      console.warn('Failed to save criteria to localStorage:', e);
+    }
   }, [criteria]);
 
   useEffect(() => {
-    localStorage.setItem('mypa_evidence_list', JSON.stringify(evidenceList));
+    try {
+      localStorage.setItem('mypa_evidence_list', JSON.stringify(evidenceList));
+    } catch (e) {
+      console.warn('Failed to save evidenceList to localStorage:', e);
+    }
   }, [evidenceList]);
 
   useEffect(() => {
-    localStorage.setItem('mypa_settings', JSON.stringify(settings));
+    try {
+      localStorage.setItem('mypa_settings', JSON.stringify(settings));
+    } catch (e) {
+      console.warn('Failed to save settings to localStorage:', e);
+    }
   }, [settings]);
 
   // Handlers
